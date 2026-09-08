@@ -1,0 +1,15 @@
+version: 0.2
+# Deploy stage: only reached if Test passed. Replaces the manual
+# `aws s3 cp fintech_config.py / fintech_cdc_pipeline.py s3://.../dags/`
+# this project ran by hand — MWAA polls its dags/ prefix and picks up
+# changes within about a minute, no restart needed.
+
+phases:
+  build:
+    commands:
+      - echo "Syncing DAG files to s3://$MWAA_DAGS_BUCKET/dags/ ..."
+      - >
+        aws s3 sync fintech_cdc_ledger/airflow/dags/
+        s3://$MWAA_DAGS_BUCKET/dags/
+        --exclude "*" --include "*.py"
+      - echo "Deployed. MWAA will pick this up within ~1 minute."

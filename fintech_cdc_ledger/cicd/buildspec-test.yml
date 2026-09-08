@@ -1,0 +1,32 @@
+version: 0.2
+# Test stage: this is the pipeline's gate. If a DAG has a syntax error or
+# a missing import, this fails and Deploy never runs — the exact "problems
+# in an early stage stop the code from progressing" principle from the
+# AWS CI/CD reference pattern.
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - pip install --quiet "apache-airflow==2.10.3" "apache-airflow-providers-amazon"
+  build:
+    commands:
+      - echo "Checking every DAG file compiles..."
+      - python -m py_compile fintech_cdc_ledger/airflow/dags/*.py
+      - echo "Checking Airflow can actually parse the DAG (catches import
+         errors py_compile can't see, e.g. a missing operator)..."
+      - export AIRFLOW_HOME=/tmp/airflow_test
+      - mkdir -p $AIRFLOW_HOME/dags
+      - cp fintech_cdc_ledger/airflow/dags/*.py $AIRFLOW_HOME/dags/
+      - airflow db init
+      - |
+        python -c "
+        from airflow.models import DagBag
+        bag = DagBag(dag_folder='$AIRFLOW_HOME/dags', include_examples=False)
+        if bag.import_errors:
+            for f, err in bag.import_errors.items():
+                print(f'DAG IMPORT ERROR in {f}: {err}')
+            raise SystemExit(1)
+        print(f'{len(bag.dags)} DAG(s) parsed cleanly: {list(bag.dags.keys())}')
+        "

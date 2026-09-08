@@ -68,7 +68,7 @@ show(items.select("order_id", "unit_price", "qty")
 # ---------------------------------------------------------------------------
 bad = spark.createDataFrame([("42",), ("not_a_number",), (None,)], ["v"])
 print("ansi.enabled =", spark.conf.get("spark.sql.ansi.enabled"))
-show(bad.withColumn("try_cast", F.col("v").try_cast("int")),
+show(bad.withColumn("try_cast", F.expr("try_cast(v as int)")),
      label="try_cast - NULL on failure, in every Spark version")
 
 spark.conf.set("spark.sql.ansi.enabled", "false")
@@ -100,7 +100,7 @@ check("region_lc" in orders.withColumn("region_lc", F.lower("region")).columns,
       "withColumn adds a column")
 check(len(orders.withColumn("region", F.lower("region")).columns) == len(orders.columns),
       "withColumn with an existing name REPLACES, it does not duplicate")
-check(items.withColumn("x", F.col("sku").try_cast("int"))
+check(items.withColumn("x", F.expr("try_cast(sku as int)"))
            .filter("x IS NOT NULL").count() == 0,
       "try_cast produces NULL on failure in every Spark version")
 check("promo_codes" not in tidy.columns, "drop removed the column")

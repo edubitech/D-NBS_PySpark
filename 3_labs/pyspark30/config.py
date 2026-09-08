@@ -11,17 +11,17 @@ Everything else in this project reads from here. No other file has a path,
 a bucket name, or a catalog name hard-coded into it.
 """
 
-MODE = "local_iceberg"
+MODE = "emr"
 
 # ---------------------------------------------------------------- local
 LOCAL_ROOT = "./warehouse"
 
 # ---------------------------------------------------------------- aws
-S3_BUCKET = "nb-lakehouse"
+S3_BUCKET = "ali-pyspark30-lab-275829498730"
 CATALOG = "glue_catalog"
-DB_BRONZE = "bronze_db"
-DB_SILVER = "silver_db"
-DB_GOLD = "gold_db"
+DB_BRONZE = "ali_bronze_db"
+DB_SILVER = "ali_silver_db"
+DB_GOLD = "ali_gold_db"
 
 # ---------------------------------------------------------------- data
 # The 13 order records (12 distinct) / 18 items seed set is ALWAYS generated. Every printed

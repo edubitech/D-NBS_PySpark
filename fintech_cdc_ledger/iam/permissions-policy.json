@@ -1,0 +1,88 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "FintechCdcBucketAccess",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject*",
+        "s3:PutObject*",
+        "s3:DeleteObject*",
+        "s3:ListBucket",
+        "s3:GetBucketLocation",
+        "s3:AbortMultipartUpload"
+      ],
+      "Resource": [
+        "arn:aws:s3:::ali-iceberg-schema-demo-275829498730",
+        "arn:aws:s3:::ali-iceberg-schema-demo-275829498730/*"
+      ]
+    },
+    {
+      "Sid": "FintechCdcGlueCatalog",
+      "Effect": "Allow",
+      "Action": [
+        "glue:CreateDatabase",
+        "glue:GetDatabase",
+        "glue:GetDatabases",
+        "glue:CreateTable",
+        "glue:UpdateTable",
+        "glue:DeleteTable",
+        "glue:GetTable",
+        "glue:GetTables",
+        "glue:BatchCreatePartition",
+        "glue:BatchDeletePartition",
+        "glue:BatchGetPartition",
+        "glue:CreatePartition",
+        "glue:DeletePartition",
+        "glue:GetPartition",
+        "glue:GetPartitions",
+        "glue:UpdatePartition"
+      ],
+      "Resource": [
+        "arn:aws:glue:us-east-1:275829498730:catalog",
+        "arn:aws:glue:us-east-1:275829498730:database/fintech_db",
+        "arn:aws:glue:us-east-1:275829498730:table/fintech_db/*"
+      ]
+    },
+    {
+      "Sid": "FintechCdcEmrLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:us-east-1:275829498730:log-group:/aws/emr-serverless/fintech-cdc*"
+    },
+    {
+      "Sid": "FintechCdcEmrDescribeLogGroups",
+      "Effect": "Allow",
+      "Action": "logs:DescribeLogGroups",
+      "Resource": "*"
+    },
+    {
+      "Sid": "FintechCdcReadSharedIcebergJarsOnly",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::amp-ali-dlh-scripts/jars/*"
+    },
+    {
+      "Sid": "FintechCdcListSharedScriptsBucketJarsPrefixOnly",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::amp-ali-dlh-scripts",
+      "Condition": {
+        "StringLike": { "s3:prefix": "jars/*" }
+      }
+    },
+    {
+      "Sid": "FintechCdcDecryptSharedJarsKmsKey",
+      "Effect": "Allow",
+      "Action": [
+        "kms:Decrypt",
+        "kms:DescribeKey"
+      ],
+      "Resource": "arn:aws:kms:us-east-1:275829498730:key/bbefd091-a571-4730-a9fa-60fe2765f6a4"
+    }
+  ]
+}

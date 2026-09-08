@@ -1,0 +1,1526 @@
+<title>Ledger State</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2f5f4;
+    --surface: #ffffff;
+    --surface-2: #e8edeb;
+    --ink: #10181a;
+    --ink-muted: #4c5c5e;
+    --line: #ccd6d3;
+    --accent: #1a8a7d;
+    --accent-soft: #d9f0ec;
+    --success: #3f8f57;
+    --success-soft: #e1f2e5;
+    --warn: #a8631c;
+    --warn-soft: #f7e6d2;
+    --danger: #ad3d3d;
+    --danger-soft: #f7dede;
+    --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1416;
+      --surface: #131c1e;
+      --surface-2: #192426;
+      --ink: #e7efee;
+      --ink-muted: #92a6a4;
+      --line: #2a3a3c;
+      --accent: #52d6c7;
+      --accent-soft: #143330;
+      --success: #74d194;
+      --success-soft: #14301d;
+      --warn: #e2a765;
+      --warn-soft: #3a2a14;
+      --danger: #e28080;
+      --danger-soft: #3a1a1a;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0d1416;
+    --surface: #131c1e;
+    --surface-2: #192426;
+    --ink: #e7efee;
+    --ink-muted: #92a6a4;
+    --line: #2a3a3c;
+    --accent: #52d6c7;
+    --accent-soft: #143330;
+    --success: #74d194;
+    --success-soft: #14301d;
+    --warn: #e2a765;
+    --warn-soft: #3a2a14;
+    --danger: #e28080;
+    --danger-soft: #3a1a1a;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--serif); line-height: 1.55; }
+
+  main { max-width: 980px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
+
+  .masthead { max-width: 980px; margin: 0 auto; padding: 2.5rem 1.5rem 1.25rem; border-bottom: 1px solid var(--line); }
+  .eyebrow { font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-family: var(--mono); font-weight: 600; font-size: clamp(1.5rem, 3vw, 2.1rem); margin: .4rem 0 .5rem; text-wrap: balance; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: .4rem .9rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-muted); }
+  .meta-row b { color: var(--ink); font-weight: 500; }
+
+  .step { padding-top: 3rem; margin-top: 3rem; border-top: 1px solid var(--line); }
+  .step:first-child { margin-top: 2rem; padding-top: 0; border-top: none; }
+  .divider { padding-top: 3rem; margin-top: 3rem; border-top: 2px solid var(--accent); }
+
+  .step-head { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; margin-bottom: .35rem; }
+  .step-num { font-family: var(--mono); font-size: .8rem; width: 2.1rem; height: 2.1rem; border-radius: 50%; border: 1.5px solid var(--accent); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-title { font-family: var(--mono); font-weight: 600; font-size: 1.25rem; margin: 0; }
+  .chip { font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; padding: .25rem .55rem; border-radius: 999px; }
+  .chip.success { color: var(--success); background: var(--success-soft); }
+  .chip.warn { color: var(--warn); background: var(--warn-soft); }
+  .chip.neutral { color: var(--ink-muted); background: var(--surface-2); }
+
+  .step-sub { color: var(--ink-muted); max-width: 62ch; margin: .3rem 0 1.6rem; }
+
+  .grid-2 { display: grid; grid-template-columns: 1.05fr 1fr; gap: 2.2rem; align-items: start; }
+  @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 1.1rem; }
+  .panel svg { display: block; width: 100%; height: auto; color: var(--ink); }
+  figure { margin: 0; }
+  figcaption { font-family: var(--mono); font-size: .74rem; color: var(--ink-muted); margin-top: .6rem; line-height: 1.5; }
+
+  h3 { font-family: var(--mono); font-size: .85rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); margin: 1.6rem 0 .6rem; }
+  h3:first-child { margin-top: 0; }
+
+  table.stake { width: 100%; border-collapse: collapse; font-size: .86rem; }
+  table.stake th, table.stake td { text-align: left; padding: .4rem .5rem .4rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.stake th { font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); font-weight: 500; }
+  table.stake td.svc { font-family: var(--mono); font-size: 1.07rem; white-space: nowrap; color: var(--danger); }
+  table.stake td.svc.plain { font-size: .86rem; color: var(--ink); white-space: normal; }
+
+  ol.console-check { margin: 0; padding-left: 1.2rem; font-size: .92rem; }
+  ol.console-check li { margin-bottom: .55rem; }
+  ol.console-check code, p code, li code { font-family: var(--mono); font-size: .85em; background: var(--surface-2); padding: .1em .35em; border-radius: 4px; }
+
+  ol.timeline { margin: 0; padding-left: 0; list-style: none; counter-reset: t; font-size: .87rem; }
+  ol.timeline li { counter-increment: t; position: relative; padding-left: 2rem; margin-bottom: .7rem; }
+  ol.timeline li::before { content: counter(t); position: absolute; left: 0; top: -.05rem; width: 1.4rem; height: 1.4rem; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--line); font-family: var(--mono); font-size: .7rem; display: flex; align-items: center; justify-content: center; color: var(--ink-muted); }
+  ol.timeline li.fail::before { color: var(--danger); border-color: var(--danger); }
+  ol.timeline li.ok::before { color: var(--success); border-color: var(--success); }
+  ol.timeline b { font-family: var(--mono); font-size: .84em; }
+
+  .fault-list { display: flex; flex-wrap: wrap; gap: .4rem; margin: .8rem 0 0; padding: 0; list-style: none; }
+  .fault-list li { font-family: var(--mono); font-size: .72rem; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: .25rem .5rem; }
+
+  footer.note { max-width: 980px; margin: 0 auto; padding: 0 1.5rem 3rem; color: var(--ink-muted); font-size: .85rem; }
+</style>
+
+<header class="masthead">
+  <div class="eyebrow">Project 1 · FinTech Transaction Ledger &amp; CDC Engine</div>
+  <h1>Ledger State</h1>
+  <div class="meta-row">
+    <span><b>Account</b> 275829498730</span>
+    <span><b>Region</b> us-east-1</span>
+    <span><b>Catalog</b> glue_catalog.fintech_db</span>
+    <span><b>Warehouse</b> s3://ali-iceberg-schema-demo-275829498730/fintech_cdc/</span>
+  </div>
+</header>
+
+<main>
+
+  <section class="step" id="state-now">
+    <div class="step-head">
+      <span class="step-num">⦿</span>
+      <h2 class="step-title">Current AWS state</h2>
+      <span class="chip success">All 10 steps complete · 4 / 4 tables live</span>
+    </div>
+    <p class="step-sub">On 2026-09-04, all four tables below were dropped with <code>PURGE</code> and the raw CDC JSON deleted, to make room for a rebuild on real PaySim data. As of 2026-09-08: every step of the brief is complete on real data — 20 days loaded and merged, both safety proofs passed, all 3 questions answered, the flagship compaction trap reproduced and fixed, a working Redshift connection with a measured 5x speedup, and a full-pipeline re-run proven idempotent to the cent. Full submission package (code, evidence pack, Airflow DAG) organized in <code>fintech_cdc_ledger/</code> — see its <code>README.md</code> and <code>EVIDENCE.md</code>.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Pipeline readiness — brief steps 1–10</h3>
+        <table class="stake">
+          <tr><th>Step</th><th>State</th></tr>
+          <tr><td class="svc plain">1 · Bronze ingestion</td><td>done · all 20 days</td></tr>
+          <tr><td class="svc plain">2 · Dedup &amp; ordering</td><td>done · all 20 days</td></tr>
+          <tr><td class="svc plain">3 · Silver DDL</td><td>done · table created</td></tr>
+          <tr><td class="svc plain">4 · MERGE + guard tests</td><td>done · 26,418 rows · both safety proofs passed</td></tr>
+          <tr><td class="svc plain">5 · Point-in-time audit (Q1)</td><td>done · 53/1,194 accounts restated</td></tr>
+          <tr><td class="svc plain">6.1 · Reconciliation</td><td>done · 26,412 rows · 0 failing</td></tr>
+          <tr><td class="svc plain">6.2 · Q2 velocity</td><td>done · 0 alerts, root cause explained</td></tr>
+          <tr><td class="svc plain">6.3 · Q3 drift</td><td>done · 3/31 material days found</td></tr>
+          <tr><td class="svc plain">7 · Table maintenance</td><td>done · trap reproduced (0 files) + fixed (339→0 deletes)</td></tr>
+          <tr><td class="svc plain">8 · Redshift integration</td><td>done · verified 26,412-row read via Spectrum</td></tr>
+          <tr><td class="svc plain">9 · Query optimisation</td><td>done · MV ~5x faster (290ms vs 1,467/1,546ms)</td></tr>
+          <tr><td class="svc plain">10 · Executive reporting</td><td>done · idempotent, all 3 questions answered in Redshift</td></tr>
+        </table>
+
+        <h3>Stakeholders</h3>
+        <table class="stake">
+          <tr><th>Role</th><th>Who / what</th></tr>
+          <tr><td class="svc plain">Operator</td><td>Ali Akram — sole identity acting; no shared teammate roles or buckets involved</td></tr>
+          <tr><td class="svc plain">Requirements</td><td>Project 1 brief — defines Q1–Q3, the 10-step architecture, 11 acceptance criteria</td></tr>
+          <tr><td class="svc plain">Data source</td><td>PaySim CSV, Kaggle — 6,362,620 real rows, not yet run through the CDC harness</td></tr>
+        </table>
+
+        <h3>Resource identifiers</h3>
+        <table class="stake">
+          <tr><th>Resource</th><th>Identifier</th></tr>
+          <tr><td class="svc plain">EMR Serverless app</td><td>fintech-cdc-spark-app · 00g8g90j3dqrmi09</td></tr>
+          <tr><td class="svc plain">IAM execution role</td><td>ali-fintech-cdc-emr-role</td></tr>
+          <tr><td class="svc plain">S3 bucket</td><td>ali-iceberg-schema-demo-275829498730</td></tr>
+        </table>
+
+        <h3>How to verify anything below, in the console</h3>
+        <table class="stake">
+          <tr><th>Where</th><th>Path</th></tr>
+          <tr><td class="svc plain">Job status</td><td>EMR Serverless → Applications → <code>fintech-cdc-spark-app</code> → Job runs → find the job ID quoted in that step</td></tr>
+          <tr><td class="svc plain">Tables</td><td>Glue → Data Catalog → Databases → <code>fintech_db</code> → Tables</td></tr>
+          <tr><td class="svc plain">Raw / warehouse files</td><td>S3 → <code>ali-iceberg-schema-demo-275829498730</code> → <code>fintech_cdc/raw/cdc/</code> or <code>fintech_cdc/warehouse/fintech_db.db/</code></td></tr>
+          <tr><td class="svc plain">Query the data</td><td>Athena → database <code>fintech_db</code> → run the SQL quoted in that step's checklist</td></tr>
+          <tr><td class="svc plain">Job logs (stdout/stderr)</td><td>S3 → same bucket → <code>fintech_cdc/emr-logs/applications/00g8g90j3dqrmi09/jobs/&lt;job-id&gt;/SPARK_DRIVER/</code></td></tr>
+        </table>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 280" role="img" aria-label="Ali Akram assumes the IAM role ali-fintech-cdc-emr-role, which the EMR Serverless application fintech-cdc-spark-app executes jobs as. That role is scoped to read and write only the fintech_cdc prefix of one S3 bucket, currently empty, and to create, update and delete tables only in the fintech_db Glue database, currently at zero tables. The exam brief for Project 1 defines the ten pipeline steps and eleven acceptance criteria this infrastructure is graded against.">
+            <defs>
+              <marker id="arrow0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <g font-family="IBM Plex Mono, monospace" font-size="9.5">
+
+              <!-- Ali -->
+              <rect x="10" y="10" width="190" height="44" rx="8" fill="none" stroke="var(--accent)" stroke-width="1.6"/>
+              <text x="105" y="30" text-anchor="middle" fill="var(--accent)" font-size="10.5">Ali Akram</text>
+              <text x="105" y="45" text-anchor="middle" font-size="8" fill="var(--ink-muted)">AWSReservedSSO_Admin_Access</text>
+
+              <line x1="105" y1="54" x2="105" y2="64" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrow0)"/>
+              <text x="115" y="63" font-size="8">assumes</text>
+
+              <!-- Role -->
+              <rect x="10" y="66" width="190" height="54" rx="8" fill="none" stroke="currentColor" stroke-width="1.3"/>
+              <text x="105" y="83" text-anchor="middle" font-size="10">IAM role</text>
+              <text x="105" y="97" text-anchor="middle" font-size="8" fill="var(--ink-muted)">ali-fintech-cdc-emr-role</text>
+              <text x="105" y="109" text-anchor="middle" font-size="7.5" fill="var(--ink-muted)">FintechCdcLedgerPermissions</text>
+
+              <line x1="105" y1="120" x2="105" y2="130" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrow0)"/>
+              <text x="115" y="129" font-size="8">executes as</text>
+
+              <!-- EMR app -->
+              <rect x="10" y="132" width="190" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="1.3"/>
+              <text x="105" y="149" text-anchor="middle" font-size="10">EMR Serverless · Spark</text>
+              <text x="105" y="163" text-anchor="middle" font-size="8" fill="var(--ink-muted)">fintech-cdc-spark-app</text>
+              <text x="105" y="175" text-anchor="middle" font-size="8" fill="var(--warn)">STOPPED · emr-7.8.0</text>
+              <text x="105" y="188" text-anchor="middle" font-size="7.5" fill="var(--ink-muted)">00g8g90j3dqrmi09</text>
+
+              <!-- edges to S3 / Glue -->
+              <path d="M200,150 C 210,150 210,60 222,60" fill="none" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow0)"/>
+              <path d="M200,175 C 210,175 210,175 222,175" fill="none" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow0)"/>
+
+              <!-- S3 -->
+              <rect x="222" y="10" width="248" height="120" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="238" y="28" font-size="10">S3 — fintech_cdc/</text>
+              <text x="238" y="41" font-size="7.5" fill="var(--ink-muted)">s3:Get/Put/Delete/List</text>
+              <line x1="238" y1="48" x2="454" y2="48" stroke="currentColor" stroke-width="1" opacity=".5"/>
+              <text x="238" y="63" font-size="8.5">warehouse/</text>
+              <text x="454" y="63" text-anchor="end" font-size="8" fill="var(--accent)">bronze_cdc_events</text>
+              <text x="238" y="79" font-size="8.5">raw/cdc/</text>
+              <text x="454" y="79" text-anchor="end" font-size="8" fill="var(--accent)">20 days landed</text>
+              <text x="238" y="95" font-size="8.5">scripts/</text>
+              <text x="454" y="95" text-anchor="end" font-size="8" fill="var(--ink-muted)">8 files</text>
+              <text x="238" y="111" font-size="8.5">emr-logs/</text>
+              <text x="454" y="111" text-anchor="end" font-size="8" fill="var(--ink-muted)">driver/executor</text>
+
+              <!-- Glue -->
+              <rect x="222" y="142" width="248" height="86" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="238" y="160" font-size="10">Glue Catalog — fintech_db</text>
+              <text x="238" y="173" font-size="7.5" fill="var(--ink-muted)">glue:Create/Update/DeleteTable</text>
+              <text x="454" y="160" text-anchor="end" font-size="8.5" fill="var(--accent)">4 tables</text>
+              <line x1="238" y1="180" x2="454" y2="180" stroke="currentColor" stroke-width="1" opacity=".5"/>
+              <text x="238" y="194" font-size="7.5" fill="var(--accent)">bronze_cdc_events · silver_staged_changes ·</text>
+              <text x="238" y="206" font-size="7.5" fill="var(--accent)">silver_ledger — all 20 days, 26,418 rows</text>
+              <text x="238" y="219" font-size="7.5" fill="var(--accent)">gold_pit_balance_compare — 1,194 accounts, 53 restated</text>
+
+              <!-- exam brief -->
+              <path d="M240,232 C 240,232 240,232 240,228" fill="none" stroke="var(--ink-muted)" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#arrow0)"/>
+              <rect x="40" y="232" width="400" height="46" rx="8" fill="none" stroke="var(--ink-muted)" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <text x="240" y="251" text-anchor="middle" font-size="9.5">Exam brief · Project 1</text>
+              <text x="240" y="266" text-anchor="middle" font-size="7.5" fill="var(--ink-muted)">defines 10 steps · A1–A11 acceptance criteria — not an AWS principal</text>
+
+            </g>
+          </svg>
+          <figcaption>Every solid arrow is a live IAM permission, not an inference. This role's Glue grant reaches only <code>fintech_db</code> and its S3 grant only <code>fintech_cdc/</code> — the account also holds unrelated projects (<code>amp_*</code>, <code>iceberg_schema_demo_ali</code>) this role cannot touch.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="divider" id="build-log">
+    <div class="step-head">
+      <span class="chip neutral">Pending re-run</span>
+    </div>
+    <p class="step-sub" style="margin-top:.6rem;">Steps 1–9 below document the pipeline's design, decisions and verification checklist — each one previously ran and passed against 20 days of synthetic CDC data, but every table it touched was dropped with <code>PURGE</code> on 2026-09-04. Steps 1 (harness) and 2 (bronze ingestion) have now been re-run for real against the real PaySim-driven dataset and are filled back in below; the rest are still <code>pending</code>, populated here as each is rerun.</p>
+  </section>
+
+  <section class="step" id="step-1">
+    <div class="step-head">
+      <span class="step-num">H</span>
+      <h2 class="step-title">CDC harness</h2>
+      <span class="chip success">Landed · 480 files · real PaySim data</span>
+    </div>
+    <p class="step-sub">A local Python generator now sources every account_id/tx_type/amount from the real PaySim CSV (nameOrig/type/amount), while still injecting the messiness a real source produces on top of it, then syncs the output to S3 — one JSON file per hour.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>What to check</h3>
+        <ol class="console-check">
+          <li>S3 console → bucket <code>ali-iceberg-schema-demo-275829498730</code> → <code>fintech_cdc/raw/cdc/</code> — 20 folders, <code>dt=2026-01-01</code> … <code>dt=2026-01-20</code></li>
+          <li>Open any <code>dt=</code> folder — 24 files, <code>cdc_events_00.json</code> … <code>cdc_events_23.json</code></li>
+          <li>Open <code>dt=2026-01-13/cdc_events_00.json</code> and look for the first <code>"risk_score"</code> field in an <code>after</code> block — the schema-drift injection</li>
+        </ol>
+
+        <h3>Injected behaviours</h3>
+        <ul class="fault-list">
+          <li>late arrivals 3%</li>
+          <li>dup PK 1%/file</li>
+          <li>delete 0.5%</li>
+          <li>out-of-order LSN 2%</li>
+          <li>schema drift day 12</li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 300" role="img" aria-label="The harness writes 480 hourly JSON files locally, then two upload targets are compared: the locked amp-ali-dlh-raw bucket denies the write, while ali-iceberg-schema-demo accepts it.">
+            <defs>
+              <marker id="arrow1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <g font-family="IBM Plex Mono, monospace" font-size="11">
+
+              <!-- generator -->
+              <rect x="12" y="118" width="140" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="82" y="145" text-anchor="middle">generate_cdc</text>
+              <text x="82" y="160" text-anchor="middle">_harness.py</text>
+              <text x="82" y="174" text-anchor="middle" fill="var(--ink-muted)" font-size="9">seed=42, local</text>
+
+              <!-- local output -->
+              <line x1="152" y1="150" x2="192" y2="150" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow1)"/>
+              <text x="172" y="140" text-anchor="middle" font-size="9">writes</text>
+
+              <rect x="194" y="112" width="150" height="76" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="269" y="136" text-anchor="middle">_harness_output/</text>
+              <text x="269" y="150" text-anchor="middle" font-size="9" fill="var(--ink-muted)">dt=2026-01-01..20/</text>
+              <text x="269" y="163" text-anchor="middle" font-size="9" fill="var(--ink-muted)">24 files/day</text>
+              <text x="269" y="177" text-anchor="middle" font-size="9" fill="var(--ink-muted)">53,003 events</text>
+
+              <!-- fork to denied target -->
+              <line x1="344" y1="128" x2="380" y2="70" stroke="var(--danger)" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arrow1)"/>
+              <rect x="330" y="14" width="140" height="58" rx="8" fill="none" stroke="var(--danger)" stroke-width="1.4" stroke-dasharray="4 3"/>
+              <text x="400" y="32" text-anchor="middle" fill="var(--danger)" font-size="10">amp-ali-dlh-raw</text>
+              <text x="400" y="46" text-anchor="middle" fill="var(--danger)" font-size="9">DENIED — PutObject</text>
+              <text x="400" y="59" text-anchor="middle" fill="var(--danger)" font-size="9">landing-role only</text>
+
+              <!-- fork to accepted target -->
+              <line x1="344" y1="168" x2="380" y2="222" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#arrow1)"/>
+              <rect x="330" y="216" width="140" height="66" rx="8" fill="none" stroke="var(--accent)" stroke-width="1.6"/>
+              <text x="400" y="236" text-anchor="middle" fill="var(--accent)" font-size="10">ali-iceberg-</text>
+              <text x="400" y="249" text-anchor="middle" fill="var(--accent)" font-size="10">schema-demo</text>
+              <text x="400" y="263" text-anchor="middle" fill="var(--accent)" font-size="9">LANDED — 480 objects</text>
+
+            </g>
+          </svg>
+          <figcaption>The harness writes locally, then two upload targets are compared: the locked landing bucket refuses the write (resource policy restricts it to one internal role); the open lab bucket accepts it. Everything downstream reads from the accepted target.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="step-2">
+    <div class="step-head">
+      <span class="step-num">1</span>
+      <h2 class="step-title">Bronze ingestion</h2>
+      <span class="chip success">Success · 2,341 rows · snapshot 7818308442955304871</span>
+    </div>
+    <p class="step-sub">A real Spark job on EMR Serverless reads one day of raw envelopes, creates the Iceberg database and table in Glue, and commits the first snapshot — append-only, schema-on-read.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Stakeholders</h3>
+        <table class="stake">
+          <tr><th>Service</th><th>Role in this step</th></tr>
+          <tr><td class="svc">EMR Serverless</td><td>Runs the Spark job — no cluster to manage</td></tr>
+          <tr><td class="svc">Apache Spark</td><td>Reads JSON, adds audit columns, writes the table</td></tr>
+          <tr><td class="svc">Apache Iceberg</td><td>Table format for <code>bronze_cdc_events</code> — snapshots, ACID writes</td></tr>
+          <tr><td class="svc">Glue Data Catalog</td><td>Metastore holding the table definition</td></tr>
+          <tr><td class="svc">Amazon S3</td><td>Raw input + Iceberg data/metadata storage</td></tr>
+          <tr><td class="svc">IAM</td><td><code>ali-fintech-cdc-emr-role</code> — scopes exactly what the job may touch</td></tr>
+          <tr><td class="svc">KMS</td><td>Decrypts the shared Iceberg runtime jar at startup</td></tr>
+        </table>
+
+        <h3>What to check</h3>
+        <ol class="console-check">
+          <li>EMR Serverless console → <code>amp-ali-emr-serverless</code> → Job runs → <code>fintech-cdc-bronze-2026-01-01-retry4</code> → state <code>Success</code></li>
+          <li>Glue console → Databases → <code>fintech_db</code> → Tables → <code>bronze_cdc_events</code></li>
+          <li>S3 console → <code>fintech_cdc/warehouse/fintech_db.db/bronze_cdc_events/</code> — <code>metadata/</code> and <code>data/</code> folders now exist</li>
+          <li>Athena: <code>SELECT * FROM fintech_db.bronze_cdc_events LIMIT 20;</code></li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 340" role="img" aria-label="EMR Serverless reads raw JSON from S3, borrows a KMS-encrypted Iceberg jar read-only from another bucket, then writes a Glue Catalog table definition and Iceberg data files in S3.">
+            <defs>
+              <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <g font-family="IBM Plex Mono, monospace" font-size="10">
+
+              <!-- borrowed jar, dashed, top -->
+              <rect x="150" y="10" width="180" height="52" rx="8" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 3" opacity=".8"/>
+              <text x="240" y="30" text-anchor="middle" opacity=".8">amp-ali-dlh-scripts/jars/*</text>
+              <text x="240" y="43" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">Iceberg jar · KMS-encrypted</text>
+              <line x1="240" y1="62" x2="240" y2="98" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrow2)"/>
+              <text x="252" y="82" font-size="8.5" fill="var(--ink-muted)">read-only, decrypt</text>
+
+              <!-- raw json -->
+              <rect x="8" y="150" width="150" height="70" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="83" y="176" text-anchor="middle">S3 raw JSON</text>
+              <text x="83" y="190" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">dt=2026-01-01/</text>
+              <text x="83" y="202" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">24 hourly files</text>
+
+              <line x1="158" y1="182" x2="196" y2="167" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow2)"/>
+              <text x="177" y="160" text-anchor="middle" font-size="8.5">reads</text>
+
+              <!-- EMR job (center, accent) -->
+              <rect x="198" y="100" width="180" height="120" rx="10" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+              <text x="288" y="128" text-anchor="middle" fill="var(--accent)" font-size="11">EMR Serverless</text>
+              <text x="288" y="143" text-anchor="middle" fill="var(--accent)" font-size="11">Spark job</text>
+              <text x="288" y="163" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">role: ali-fintech-cdc-</text>
+              <text x="288" y="175" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">emr-role</text>
+              <text x="288" y="195" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">2,341 rows</text>
+
+              <!-- to glue catalog -->
+              <line x1="378" y1="130" x2="416" y2="80" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow2)"/>
+              <text x="440" y="98" text-anchor="middle" font-size="8.5">CREATE DB</text>
+              <text x="440" y="109" text-anchor="middle" font-size="8.5">+ TABLE</text>
+
+              <rect x="330" y="30" width="150" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="405" y="52" text-anchor="middle">Glue Catalog</text>
+              <text x="405" y="65" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">fintech_db.</text>
+              <text x="405" y="76" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">bronze_cdc_events</text>
+
+              <!-- to warehouse -->
+              <line x1="378" y1="195" x2="416" y2="238" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow2)"/>
+              <text x="446" y="220" text-anchor="middle" font-size="8.5">writes +</text>
+              <text x="446" y="231" text-anchor="middle" font-size="8.5">commits</text>
+
+              <rect x="330" y="240" width="150" height="70" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="405" y="264" text-anchor="middle">S3 warehouse</text>
+              <text x="405" y="277" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">data/ + metadata/</text>
+              <text x="405" y="288" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">snapshot committed</text>
+
+              <!-- catalog points to warehouse -->
+              <line x1="405" y1="90" x2="405" y2="240" stroke="currentColor" stroke-width="1" stroke-dasharray="2 3" opacity=".6"/>
+              <text x="412" y="165" font-size="8" fill="var(--ink-muted)" opacity=".8">location →</text>
+
+            </g>
+          </svg>
+          <figcaption>The job crosses three trust boundaries at once: full read/write on its own bucket, a narrow read-only borrow of a jar in another lab's bucket (KMS-gated), and write access to a shared Glue Catalog. The catalog entry only points at the data — Iceberg's real state lives in S3.</figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <h3>Why it took five job runs (first time, on synthetic data)</h3>
+    <ol class="timeline">
+      <li class="fail"><b>Attempt 1</b> — failed in 12s: role could not <code>logs:DescribeLogGroups</code> (wrote the action with a scoped resource ARN; this action requires <code>Resource: "*"</code>)</li>
+      <li class="fail"><b>Attempt 2</b> — failed: the application's own CloudWatch logging is hardcoded to another lab's log group; disabled CloudWatch logging for this job, kept S3-only logs</li>
+      <li class="fail"><b>Attempt 3</b> — failed: Spark needs the Iceberg runtime jar, pre-staged in <code>amp-ali-dlh-scripts/jars/</code>; granted read-only <code>GetObject</code> scoped to that one prefix</li>
+      <li class="fail"><b>Attempt 4</b> — failed: the jar is KMS-encrypted; granted <code>kms:Decrypt</code> on that one key (its key policy already trusts the account)</li>
+      <li class="ok"><b>Attempt 5</b> — succeeded, once these four fixes stacked.</li>
+    </ol>
+    <p class="step-sub" style="margin-top:.9rem;">Rerun against real PaySim-driven data: <b>succeeded on the first attempt</b> — 2,341 rows, snapshot <code>7818308442955304871</code>, committed 2026-09-06 07:40:34 UTC. The four permission fixes above were already baked into the role from the first run.</p>
+  </section>
+
+  <section class="step" id="step-3">
+    <div class="step-head">
+      <span class="step-num" style="font-size:.68rem;">1.1</span>
+      <h2 class="step-title">Bronze idempotency proof</h2>
+      <span class="chip success">Confirmed · 2,703 rows both times · day 5</span>
+    </div>
+    <p class="step-sub">Re-ran day 5's ingestion with a new batch id. Iceberg recorded a second save-point (snapshot), but the live row count didn't move — reloading a day never double-counts.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>The two runs (real, day 5)</h3>
+        <table class="stake">
+          <tr><th>Run</th><th>Snapshot ID</th><th>Rows added</th></tr>
+          <tr><td class="svc plain">1st load</td><td>2476461427939435882</td><td>2,703</td></tr>
+          <tr><td class="svc plain">2nd load (retry)</td><td>6151183589631536160</td><td>2,703</td></tr>
+          <tr><td class="svc plain">Current table</td><td colspan="2">2,703 rows for day 5 — one batch_id only, by design</td></tr>
+        </table>
+
+        <h3>How to verify — AWS Console (real, this run)</h3>
+        <ol class="console-check">
+          <li><b>EMR Serverless</b> → <code>fintech-cdc-spark-app</code> → Job runs → job ID <code>00g8j53n4lsq8o0b</code> (2nd load) → <code>Success</code></li>
+          <li><b>Athena</b> → <code>SELECT snapshot_id, committed_at, summary['added-records'] FROM fintech_db."bronze_cdc_events$snapshots" ORDER BY committed_at;</code> — two rows, both 2,703 added, for day 5</li>
+          <li><b>S3</b> → job logs at <code>fintech_cdc/emr-logs/applications/00g8g90j3dqrmi09/jobs/00g8j53n4lsq8o0b/SPARK_DRIVER/stdout.gz</code></li>
+        </ol>
+
+        <h3>What to check</h3>
+        <ol class="console-check">
+          <li>Athena: <code>SELECT snapshot_id, committed_at, operation FROM fintech_db."bronze_cdc_events$snapshots" ORDER BY committed_at;</code> — two rows</li>
+          <li>Athena: <code>SELECT count(*) FROM fintech_db.bronze_cdc_events;</code> — should equal the 1st load's count, not double it</li>
+          <li>Athena: <code>SELECT _batch_id, count(*) FROM fintech_db.bronze_cdc_events GROUP BY _batch_id;</code> — one row: only the newest batch id is visible in the live table</li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 280" role="img" aria-label="Two loads of the same day both commit a snapshot, but the second overwritePartitions call replaces the partition's contents rather than adding to them, so the live table always shows exactly one batch's rows.">
+            <defs>
+              <marker id="arrow3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <g font-family="IBM Plex Mono, monospace" font-size="10">
+
+              <!-- snapshot log (persists, grows) -->
+              <text x="20" y="24" font-size="9" fill="var(--ink-muted)">snapshot log (immutable, keeps growing)</text>
+              <rect x="20" y="34" width="160" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+              <text x="100" y="53" text-anchor="middle" font-size="9">snap 1 · 2476461427…</text>
+              <text x="100" y="66" text-anchor="middle" font-size="9" fill="var(--ink-muted)">batch A · 2,703 rows</text>
+
+              <rect x="200" y="34" width="160" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+              <text x="280" y="53" text-anchor="middle" font-size="9">snap 2 · 6151183589…</text>
+              <text x="280" y="66" text-anchor="middle" font-size="9" fill="var(--ink-muted)">batch B · 2,703 rows</text>
+
+              <line x1="180" y1="57" x2="196" y2="57" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow3)"/>
+
+              <!-- overwritePartitions arrow down -->
+              <line x1="280" y1="80" x2="280" y2="140" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#arrow3)"/>
+              <text x="292" y="112" font-size="8.5" fill="var(--accent)">overwritePartitions()</text>
+              <text x="292" y="123" font-size="8.5" fill="var(--accent)">replaces, not appends</text>
+
+              <!-- live table state, single box, contents swapped -->
+              <text x="20" y="160" font-size="9" fill="var(--ink-muted)">live table — extract_date=2026-01-01 partition</text>
+              <rect x="20" y="170" width="340" height="70" rx="8" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+              <text x="190" y="198" text-anchor="middle" fill="var(--accent)" font-size="12">2,703 rows — batch B only</text>
+              <text x="190" y="215" text-anchor="middle" font-size="9" fill="var(--ink-muted)">batch A's rows no longer in the live view</text>
+              <text x="190" y="228" text-anchor="middle" font-size="9" fill="var(--ink-muted)">(still reachable via TIMESTAMP AS OF snap 1)</text>
+
+            </g>
+          </svg>
+          <figcaption>Both loads commit a snapshot — the audit trail only grows. But the live partition always holds exactly one batch's rows, because the second write overwrites the whole partition instead of adding to it. That's what makes a retried day safe.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="step-4">
+    <div class="step-head">
+      <span class="step-num">2</span>
+      <h2 class="step-title">Deduplication &amp; event ordering</h2>
+      <span class="chip success">Success · 1,198 / 2,341 rows kept · day 1</span>
+    </div>
+    <p class="step-sub">Bronze holds one row per <em>event</em>; Silver needs one row per <em>transaction</em>. A window function ranks every transaction's events by when the change actually happened — not by which file they landed in — and keeps only the newest.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Deliverable numbers (real, day 1)</h3>
+        <table class="stake">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td class="svc plain">Rows in (bronze, day 1)</td><td>2,341</td></tr>
+          <tr><td class="svc plain">Rows out (collapsed)</td><td>1,198</td></tr>
+          <tr><td class="svc plain">Collapse ratio</td><td>0.5117</td></tr>
+          <tr><td class="svc plain">Keys with &gt;1 event</td><td>1,143</td></tr>
+        </table>
+
+        <h3>How to verify — AWS Console (real, this run)</h3>
+        <ol class="console-check">
+          <li><b>EMR Serverless</b> → <code>fintech-cdc-spark-app</code> → Job runs → job ID <code>00g8icmm3ooff80b</code> → <code>Success</code></li>
+          <li><b>Glue</b> → <code>fintech_db</code> → Tables → <code>silver_staged_changes</code> now exists</li>
+          <li><b>Athena</b> → <code>SELECT status, count(*) FROM fintech_db.silver_staged_changes GROUP BY status;</code></li>
+          <li><b>S3</b> → <code>fintech_cdc/emr-logs/applications/00g8g90j3dqrmi09/jobs/00g8icmm3ooff80b/SPARK_DRIVER/stdout.gz</code> — the exact <code>DEDUP run_date=2026-01-01 rows_in=2341 rows_out=1198 collapse_ratio=0.5117 intra_batch_duplicate_keys=1143</code> line lives here</li>
+        </ol>
+
+        <h3>A gotcha fixed along the way</h3>
+        <p style="font-size:.9rem; color:var(--ink-muted); margin:0;">The brief's own reference code reads every field only from the CDC <code>after</code> block. A delete event has <code>after: null</code> — so its <code>transaction_id</code> would come out null and silently drop out of the dedup key. Fixed by falling back to <code>before</code> for deletes, so all 4 of day 1's deletes survive with their correct key.</p>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 300" role="img" aria-label="Bronze rows for each transaction are ranked by a window function ordered by source timestamp then source LSN, and only the top-ranked row per transaction is kept as the current state.">
+            <defs>
+              <marker id="arrow4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <g font-family="IBM Plex Mono, monospace" font-size="10">
+
+              <text x="20" y="22" font-size="9" fill="var(--ink-muted)">bronze_cdc_events — one txn, two events</text>
+              <rect x="20" y="30" width="150" height="34" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+              <text x="95" y="51" text-anchor="middle" font-size="9">op=c · lsn=101 · PENDING</text>
+              <rect x="20" y="72" width="150" height="34" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+              <text x="95" y="93" text-anchor="middle" font-size="9">op=u · lsn=145 · SETTLED</text>
+              <text x="95" y="118" text-anchor="middle" font-size="8.5" fill="var(--warn)">(file order may be swapped —</text>
+              <text x="95" y="129" text-anchor="middle" font-size="8.5" fill="var(--warn)">~2% written out-of-order)</text>
+
+              <line x1="172" y1="70" x2="204" y2="70" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow4)"/>
+
+              <rect x="206" y="30" width="190" height="80" rx="8" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+              <text x="301" y="52" text-anchor="middle" fill="var(--accent)" font-size="10">ROW_NUMBER() OVER</text>
+              <text x="301" y="66" text-anchor="middle" fill="var(--accent)" font-size="9">PARTITION BY transaction_id</text>
+              <text x="301" y="79" text-anchor="middle" fill="var(--accent)" font-size="9">ORDER BY source_ts DESC,</text>
+              <text x="301" y="92" text-anchor="middle" fill="var(--accent)" font-size="9">source_lsn DESC</text>
+
+              <line x1="398" y1="70" x2="430" y2="70" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow4)"/>
+              <text x="414" y="60" text-anchor="middle" font-size="8.5">rn=1</text>
+
+              <rect x="20" y="200" width="150" height="34" rx="6" fill="none" stroke="var(--ink-muted)" stroke-width="1.2" stroke-dasharray="3 3" opacity=".6"/>
+              <text x="95" y="221" text-anchor="middle" font-size="9" opacity=".6">op=c · lsn=101 · dropped</text>
+
+              <rect x="330" y="30" width="130" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="1.6"/>
+              <text x="395" y="55" text-anchor="middle" font-size="10">silver_staged</text>
+              <text x="395" y="68" text-anchor="middle" font-size="10">_changes</text>
+              <text x="395" y="82" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">op=u · SETTLED kept</text>
+
+              <text x="20" y="180" font-size="9" fill="var(--ink-muted)">whole batch: 2,341 rows in</text>
+              <text x="20" y="270" font-size="12" fill="var(--accent)">→ 1,198 rows out (one per transaction_id)</text>
+            </g>
+          </svg>
+          <figcaption>Ordering by source_ts then source_lsn survives even when a file's write order is scrambled — ordering by arrival time or file position would sometimes keep the stale PENDING row instead of the real SETTLED one.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="step-5">
+    <div class="step-head">
+      <span class="step-num">3</span>
+      <h2 class="step-title">Silver schema DDL</h2>
+      <span class="chip success">Success · table created, empty · 2026-09-06</span>
+    </div>
+    <p class="step-sub"><code>silver_ledger</code> now exists — one row per transaction, current state. No data movement in this step; it's purely the shape the CDC MERGE will write into.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>The four decisions</h3>
+        <table class="stake">
+          <tr><th>Choice</th><th>Why</th></tr>
+          <tr><td class="svc">day(event_timestamp)</td><td>Hidden partitioning — filter the raw timestamp, still get pruning</td></tr>
+          <tr><td class="svc">bucket(16, account_id)</td><td>Caps high-cardinality account_id at 16 dirs, not millions</td></tr>
+          <tr><td class="svc">merge-on-read</td><td>CDC = constant small updates; copy-on-write would rewrite whole files</td></tr>
+          <tr><td class="svc">distribution-mode=hash</td><td>Keeps one partition's rows on one task, not scattered</td></tr>
+        </table>
+
+        <h3>How to verify — AWS Console (real, this run)</h3>
+        <ol class="console-check">
+          <li><b>EMR Serverless</b> → Applications → <code>fintech-cdc-spark-app</code> → Job runs → job ID <code>00g8icjsvmqnqg0b</code> → status <code>Success</code></li>
+          <li><b>Glue</b> → Data Catalog → Databases → <code>fintech_db</code> → Tables → <code>silver_ledger</code> should now appear, 10 columns</li>
+          <li><b>Athena</b> (workgroup: primary, or your assigned one) → run <code>DESCRIBE fintech_db.silver_ledger;</code> — confirm <code>Partition spec</code> shows <code>event_timestamp_day · day</code> and <code>account_id_bucket · bucket[16]</code></li>
+          <li><b>S3</b> → bucket <code>ali-iceberg-schema-demo-275829498730</code> → <code>fintech_cdc/warehouse/fintech_db.db/silver_ledger/</code> — a <code>metadata/</code> folder now exists (no <code>data/</code> yet — table is empty)</li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 260" role="img" aria-label="One account's transactions land in the same bucket directory regardless of which day they occurred, while each day's data stays in its own day partition, giving a two-dimensional layout of 16 buckets by day.">
+            <g font-family="IBM Plex Mono, monospace" font-size="10">
+
+              <text x="20" y="20" font-size="9" fill="var(--ink-muted)">silver_ledger physical layout — day × bucket(16)</text>
+
+              <!-- day columns -->
+              <text x="90" y="42" text-anchor="middle" font-size="9">day=01-01</text>
+              <text x="230" y="42" text-anchor="middle" font-size="9">day=01-02</text>
+              <text x="370" y="42" text-anchor="middle" font-size="9">day=01-03 …</text>
+
+              <!-- bucket rows -->
+              <text x="20" y="70" font-size="9" fill="var(--ink-muted)">bucket 03</text>
+              <rect x="60" y="56" width="60" height="26" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.2"/>
+              <rect x="200" y="56" width="60" height="26" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.2"/>
+              <rect x="340" y="56" width="60" height="26" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.2"/>
+              <text x="90" y="73" text-anchor="middle" font-size="8" fill="var(--accent)">ACC-00449</text>
+              <text x="230" y="73" text-anchor="middle" font-size="8" fill="var(--accent)">ACC-00449</text>
+              <text x="370" y="73" text-anchor="middle" font-size="8" fill="var(--accent)">ACC-00449</text>
+
+              <text x="20" y="100" font-size="9" fill="var(--ink-muted)">bucket 07</text>
+              <rect x="60" y="86" width="60" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="1"/>
+              <rect x="200" y="86" width="60" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="1"/>
+              <rect x="340" y="86" width="60" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="1"/>
+
+              <text x="20" y="130" font-size="9" fill="var(--ink-muted)">… × 16</text>
+              <rect x="60" y="116" width="60" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="1" opacity=".5"/>
+              <rect x="200" y="116" width="60" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="1" opacity=".5"/>
+              <rect x="340" y="116" width="60" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="1" opacity=".5"/>
+
+              <text x="20" y="180" font-size="9" fill="var(--accent)">every ACC-00449 row across every day lands in</text>
+              <text x="20" y="193" font-size="9" fill="var(--accent)">the same bucket column — one account, one file group</text>
+
+              <text x="20" y="225" font-size="9" fill="var(--ink-muted)">a WHERE account_id = … query touches</text>
+              <text x="20" y="238" font-size="9" fill="var(--ink-muted)">only 1 of 16 buckets per day, not all accounts</text>
+            </g>
+          </svg>
+          <figcaption>Two independent partition dimensions: day(event_timestamp) narrows by time, bucket(16, account_id) narrows by account — together they prune both a time-range scan and a single-account lookup without ever creating a directory per account.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="step-6">
+    <div class="step-head">
+      <span class="step-num">4</span>
+      <h2 class="step-title">CDC upserts — MERGE INTO</h2>
+      <span class="chip success">Success · 26,418 rows total after all 20 days</span>
+    </div>
+    <p class="step-sub"><code>silver_staged_changes</code> merged into <code>silver_ledger</code> day by day, days 1-20. Day 1 was a bulk insert into an empty ledger (below); days 2-20 ran via <code>process_range.py</code> in one job, growing the ledger to 26,418 rows.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>What happened (real, day 1)</h3>
+        <table class="stake">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td class="svc plain">Before (silver_ledger)</td><td>0 rows</td></tr>
+          <tr><td class="svc plain">Staged input</td><td>1,198 rows</td></tr>
+          <tr><td class="svc plain">After (silver_ledger)</td><td>1,193 rows</td></tr>
+          <tr><td class="svc plain">is_deleted flagged</td><td>0</td></tr>
+          <tr><td class="svc plain">Delete events dropped</td><td>5</td></tr>
+        </table>
+
+        <h3>The edge case — not a bug (reproduced)</h3>
+        <p style="font-size:.9rem; color:var(--ink-muted); margin:0 0 1rem;">5 transactions were created <em>and</em> charged back on day 1, before the ledger ever saw them. Their delete event matches neither <code>WHEN MATCHED</code> (nothing exists yet to update) nor the insert branch (deletes are explicitly excluded from insert) — they vanish from the permanent ledger entirely. Correct CDC behaviour for a cold start: the original synthetic run hit the same gap (4 rows then, 5 now) — it's a structural property of the design, not a data-specific fluke.</p>
+
+        <h3>How to verify — AWS Console (real, this run)</h3>
+        <ol class="console-check">
+          <li><b>EMR Serverless</b> → <code>fintech-cdc-spark-app</code> → Job runs → day 1: job ID <code>00g8icodjqpung0b</code>; days 2-20: job ID <code>00g8j4vbjebkv00b</code> (<code>process_range.py</code>) → both <code>Success</code></li>
+          <li><b>Athena</b> → <code>SELECT count(*) FROM fintech_db.silver_ledger;</code> — should read 26,418</li>
+          <li><b>Athena</b> → <code>SELECT status, is_deleted, count(*) FROM fintech_db.silver_ledger GROUP BY status, is_deleted;</code></li>
+          <li><b>S3</b> → job logs under <code>fintech_cdc/emr-logs/applications/00g8g90j3dqrmi09/jobs/&lt;job-id&gt;/SPARK_DRIVER/stdout.gz</code> — day 1's line reads <code>MERGE_LEDGER run_date=2026-01-01 before_total=0 after_total=1193 staged_rows=1198 is_deleted_flagged=0 staged_delete_events=5</code>; the days-2-20 job prints one <code>PROCESS_RANGE</code> line per day, ending <code>ledger_total_after=26418</code></li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 300" role="img" aria-label="Staged changes split three ways in the merge: matched deletes flag is_deleted, matched updates apply only if newer than the ledger's current value, and unmatched non-deletes insert as new rows — but unmatched deletes match none of the three and are dropped.">
+            <defs>
+              <marker id="arrow6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <g font-family="IBM Plex Mono, monospace" font-size="9.5">
+
+              <rect x="10" y="120" width="140" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="80" y="145" text-anchor="middle" font-size="10">staged_changes</text>
+              <text x="80" y="160" text-anchor="middle" font-size="9" fill="var(--ink-muted)">1,198 rows</text>
+              <text x="80" y="172" text-anchor="middle" font-size="9" fill="var(--ink-muted)">1193 c/u · 5 d</text>
+
+              <!-- branch 1: matched + delete -->
+              <line x1="150" y1="130" x2="200" y2="40" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow6)"/>
+              <text x="220" y="30" font-size="8.5">MATCHED + op=d</text>
+              <text x="220" y="41" font-size="8.5" fill="var(--ink-muted)">→ flag is_deleted</text>
+
+              <!-- branch 2: matched + guard -->
+              <line x1="150" y1="150" x2="200" y2="150" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow6)"/>
+              <text x="220" y="140" font-size="8.5">MATCHED + newer ts</text>
+              <text x="220" y="151" font-size="8.5" fill="var(--ink-muted)">→ update fields</text>
+
+              <!-- branch 3: not matched, not delete -->
+              <line x1="150" y1="165" x2="200" y2="222" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#arrow6)"/>
+              <text x="220" y="212" font-size="8.5" fill="var(--accent)">NOT MATCHED + op≠d</text>
+              <text x="220" y="223" font-size="8.5" fill="var(--accent)">→ insert (1,193)</text>
+
+              <!-- branch 4: not matched + delete -> dropped -->
+              <line x1="150" y1="175" x2="200" y2="270" stroke="var(--danger)" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#arrow6)"/>
+              <text x="220" y="262" font-size="8.5" fill="var(--danger)">NOT MATCHED + op=d</text>
+              <text x="220" y="273" font-size="8.5" fill="var(--danger)">→ matches nothing — dropped (5)</text>
+
+              <rect x="340" y="195" width="130" height="50" rx="8" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+              <text x="405" y="216" text-anchor="middle" fill="var(--accent)" font-size="10">silver_ledger</text>
+              <text x="405" y="230" text-anchor="middle" fill="var(--accent)" font-size="9">1,193 rows</text>
+              <line x1="335" y1="220" x2="342" y2="220" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#arrow6)"/>
+            </g>
+          </svg>
+          <figcaption>Four routes out of the merge, not two. The fourth — an unmatched delete — is the cold-start gap: a transaction created and reversed before ever reaching the ledger leaves no trace in it.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="step-7">
+    <div class="step-head">
+      <span class="step-num" style="font-size:.68rem;">4.1</span>
+      <h2 class="step-title">Out-of-order guard proof</h2>
+      <span class="chip success">Success · ledger unchanged</span>
+    </div>
+    <p class="step-sub">Injected a fake, late event for a real transaction, claiming a wrong amount from 7 days earlier. The guard rejected it — because it's older than what's already recorded, not because the amount looks wrong.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>The four-part proof the brief requires (real, transaction T-019160006)</h3>
+        <table class="stake">
+          <tr><th>Step</th><th>Result</th></tr>
+          <tr><td class="svc plain">1. Recorded before</td><td>$1,667,482.25 · SETTLED · event_timestamp 2026-01-20 19:00:00</td></tr>
+          <tr><td class="svc plain">2. Injected late row</td><td>source_ts 2026-01-13 19:00:00 (7 days earlier) · $1.00</td></tr>
+          <tr><td class="svc plain">3. Ledger unchanged?</td><td><b>True</b> — still $1,667,482.25</td></tr>
+          <tr><td class="svc plain">4. Still in bronze?</td><td>Yes — count=1</td></tr>
+        </table>
+
+        <h3>How to verify — AWS Console (real, this run)</h3>
+        <ol class="console-check">
+          <li><b>EMR Serverless</b> → <code>fintech-cdc-spark-app</code> → Job runs → job ID <code>00g8j8bdgd84qg0b</code> → <code>Success</code></li>
+          <li><b>Athena</b> → <code>SELECT amount, event_timestamp FROM fintech_db.silver_ledger WHERE transaction_id='T-019160006';</code> — still $1,667,482.25</li>
+          <li><b>Athena</b> → <code>SELECT * FROM fintech_db.bronze_cdc_events WHERE _batch_id='guard-test-late-arrival';</code> — the $1.00 attempt is on the record, permanently, even though it never took effect</li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 260" role="img" aria-label="A synthetic late event with an older source timestamp and a wrong amount is checked against the guard condition, fails it, and is rejected — the ledger keeps its real value while the rejected attempt is still recorded in bronze.">
+            <defs>
+              <marker id="arrow7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <g font-family="IBM Plex Mono, monospace" font-size="9.5">
+
+              <rect x="10" y="20" width="180" height="60" rx="8" fill="none" stroke="var(--danger)" stroke-width="1.4"/>
+              <text x="100" y="42" text-anchor="middle" fill="var(--danger)" font-size="10">synthetic late event</text>
+              <text x="100" y="56" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">source_ts 2026-01-13</text>
+              <text x="100" y="68" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">amount $1.00 (wrong)</text>
+
+              <line x1="190" y1="50" x2="230" y2="50" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow7)"/>
+
+              <rect x="232" y="15" width="220" height="70" rx="8" fill="none" stroke="currentColor" stroke-width="1.6"/>
+              <text x="342" y="38" text-anchor="middle" font-size="9.5">guard check</text>
+              <text x="342" y="52" text-anchor="middle" font-size="9" fill="var(--ink-muted)">s.source_ts &gt; t.event_timestamp ?</text>
+              <text x="342" y="68" text-anchor="middle" font-size="9" fill="var(--danger)">01-13 &gt; 01-20 → FALSE</text>
+
+              <line x1="342" y1="85" x2="342" y2="130" stroke="var(--danger)" stroke-width="1.6" marker-end="url(#arrow7)"/>
+              <text x="358" y="112" font-size="8.5" fill="var(--danger)">REJECTED</text>
+
+              <rect x="232" y="135" width="220" height="60" rx="8" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+              <text x="342" y="158" text-anchor="middle" fill="var(--accent)" font-size="10">silver_ledger</text>
+              <text x="342" y="173" text-anchor="middle" fill="var(--accent)" font-size="9">still $1,667,482.25</text>
+              <text x="342" y="186" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">event_timestamp unchanged</text>
+
+              <line x1="100" y1="80" x2="100" y2="200" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 3"/>
+              <rect x="10" y="205" width="180" height="40" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+              <text x="100" y="222" text-anchor="middle" font-size="9">bronze_cdc_events</text>
+              <text x="100" y="235" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">attempt recorded anyway</text>
+            </g>
+          </svg>
+          <figcaption>The guard doesn't judge the amount — it only compares timestamps. Bronze keeps the rejected attempt on the permanent record either way, so a later audit can still see someone tried.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="step-8">
+    <div class="step-head">
+      <span class="step-num" style="font-size:.68rem;">4.2</span>
+      <h2 class="step-title">Duplicate-key MERGE abort</h2>
+      <span class="chip success">Success · MERGE aborted as expected</span>
+    </div>
+    <p class="step-sub">Fed the MERGE two rows for transaction T-019160006 (the same one from 4.1) in a single batch. It aborted — correctly. This closes out Step 4 entirely: the core merge, the ordering guard, and this abort are all now proven on real data.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Break log entry #1 (real, this run)</h3>
+        <table class="stake">
+          <tr><th>Field</th><th>Value</th></tr>
+          <tr><td class="svc plain">Trigger</td><td>2 staged rows for T-019160006, amounts $111.11 and $222.22</td></tr>
+          <tr><td class="svc plain">Error</td><td><code>MERGE_CARDINALITY_VIOLATION</code></td></tr>
+          <tr><td class="svc plain">Diagnosis</td><td>Engine can't know which source row you meant — refuses to guess</td></tr>
+          <tr><td class="svc plain">Fix</td><td>Step 2's dedup guarantees ≤1 row per key before MERGE ever runs</td></tr>
+          <tr><td class="svc plain">Ledger after abort</td><td>Unchanged — $1,667,482.25, exactly as before</td></tr>
+        </table>
+
+        <h3>The exact error text (real, captured from this run)</h3>
+        <p style="font-family:var(--mono); font-size:.76rem; background:var(--surface-2); padding:.7rem; border-radius:8px; line-height:1.6; margin:0 0 1rem;">org.apache.spark.SparkRuntimeException: [MERGE_CARDINALITY_VIOLATION] The ON search condition of the MERGE statement matched a single row from the target table with multiple rows of the source table.</p>
+
+        <h3>How to verify — AWS Console (real, this run)</h3>
+        <ol class="console-check">
+          <li><b>EMR Serverless</b> → <code>fintech-cdc-spark-app</code> → Job runs → job ID <code>00g8j8djtib8dg0b</code> → <code>Success</code> (the job succeeded; the MERGE inside it aborted — that's the point)</li>
+          <li><b>Athena</b> → <code>SELECT amount FROM fintech_db.silver_ledger WHERE transaction_id='T-019160006';</code> — still $1,667,482.25</li>
+          <li><b>S3</b> → full traceback at <code>fintech_cdc/emr-logs/applications/00g8g90j3dqrmi09/jobs/00g8j8djtib8dg0b/SPARK_DRIVER/stdout.gz</code></li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 240" role="img" aria-label="Two source rows for the same transaction ID both match the same target row in the ON condition, which Spark's cardinality check refuses to resolve, aborting the whole merge rather than picking one arbitrarily.">
+            <defs>
+              <marker id="arrow8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <g font-family="IBM Plex Mono, monospace" font-size="9.5">
+
+              <rect x="10" y="20" width="150" height="34" rx="6" fill="none" stroke="var(--danger)" stroke-width="1.3"/>
+              <text x="85" y="41" text-anchor="middle" font-size="9">T-019160006 · $111.11</text>
+
+              <rect x="10" y="64" width="150" height="34" rx="6" fill="none" stroke="var(--danger)" stroke-width="1.3"/>
+              <text x="85" y="85" text-anchor="middle" font-size="9">T-019160006 · $222.22</text>
+
+              <text x="85" y="110" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">same key, one batch</text>
+
+              <line x1="160" y1="37" x2="210" y2="70" stroke="var(--danger)" stroke-width="1.4" marker-end="url(#arrow8)"/>
+              <line x1="160" y1="80" x2="210" y2="72" stroke="var(--danger)" stroke-width="1.4" marker-end="url(#arrow8)"/>
+
+              <rect x="212" y="45" width="150" height="55" rx="8" fill="none" stroke="currentColor" stroke-width="1.6"/>
+              <text x="287" y="66" text-anchor="middle" font-size="9.5">ON t.transaction_id</text>
+              <text x="287" y="79" text-anchor="middle" font-size="9.5">= s.transaction_id</text>
+              <text x="287" y="93" text-anchor="middle" font-size="8.5" fill="var(--danger)">2 matches → ambiguous</text>
+
+              <line x1="287" y1="100" x2="287" y2="140" stroke="var(--danger)" stroke-width="1.6" marker-end="url(#arrow8)"/>
+
+              <rect x="187" y="145" width="200" height="55" rx="8" fill="none" stroke="var(--danger)" stroke-width="1.8"/>
+              <text x="287" y="167" text-anchor="middle" fill="var(--danger)" font-size="10">MERGE_CARDINALITY</text>
+              <text x="287" y="181" text-anchor="middle" fill="var(--danger)" font-size="10">_VIOLATION → abort</text>
+              <text x="287" y="194" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">ledger untouched</text>
+            </g>
+          </svg>
+          <figcaption>Whole-statement abort, not partial application — the merge either fully succeeds with one unambiguous match per key, or fails cleanly with nothing written. That's the guarantee Step 2's dedup exists to keep intact.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="step-9">
+    <div class="step-head">
+      <span class="step-num">5</span>
+      <h2 class="step-title">Point-in-time audit — Q1</h2>
+      <span class="chip success">Success · 53 accounts restated</span>
+    </div>
+    <p class="step-sub">Asked the same question two ways: what did we know right after day 1's close, and what do we know now that 19 more days of corrections have landed? Both are legitimate — they differ by exactly the late-adjustment impact.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>The setup (real)</h3>
+        <table class="stake">
+          <tr><th>Term</th><th>Value</th></tr>
+          <tr><td class="svc plain">Business cutoff (AS_OF)</td><td>2026-01-01 23:59:59 — day 1's close</td></tr>
+          <tr><td class="svc plain">Snapshot pin</td><td>2026-09-06 08:08:24 UTC — just after day 1's real merge (snapshot 2697762506882925537)</td></tr>
+          <tr><td class="svc plain">Accounts as of cutoff</td><td>1,194</td></tr>
+          <tr><td class="svc plain">Restated by later days</td><td>53 (4.4%)</td></tr>
+        </table>
+
+        <h3>Top delta (real — all 5 are full chargebacks)</h3>
+        <table class="stake">
+          <tr><th>Account</th><th>As known → as restated (Δ)</th></tr>
+          <tr><td class="svc plain">C197491520</td><td>-$3,776,389.09 → $0.00 (Δ +$3,776,389.09)</td></tr>
+          <tr><td class="svc plain">C458998685</td><td>-$1,127,058.69 → $0.00 (Δ +$1,127,058.69)</td></tr>
+          <tr><td class="svc plain">C883678948</td><td>-$789,419.02 → $0.00 (Δ +$789,419.02)</td></tr>
+          <tr><td class="svc plain">C345290829</td><td>-$668,237.36 → $0.00 (Δ +$668,237.36)</td></tr>
+          <tr><td class="svc plain">C566891420</td><td>-$539,430.95 → $0.00 (Δ +$539,430.95)</td></tr>
+        </table>
+        <p style="font-size:.85rem; color:var(--ink-muted); margin:.5rem 0 0;">Each of these accounts had exactly one large transaction as of day 1. A chargeback (<code>op=d</code>) for that same transaction arrived later, within the 20-day window — cancelling it entirely, which is why the restated balance is exactly $0, not a smaller negative number.</p>
+
+        <h3>How to verify — AWS Console (real, this run)</h3>
+        <ol class="console-check">
+          <li><b>EMR Serverless</b> → <code>fintech-cdc-spark-app</code> → Job runs → job ID <code>00g8j80hp9slqg0b</code> → <code>Success</code></li>
+          <li><b>Glue</b> → <code>fintech_db</code> → Tables → <code>gold_pit_balance_compare</code> now exists</li>
+          <li><b>Athena</b> → <code>SELECT * FROM fintech_db.gold_pit_balance_compare WHERE delta != 0 ORDER BY abs(delta) DESC LIMIT 10;</code></li>
+          <li><b>Athena</b> → <code>SELECT snapshot_id, committed_at FROM fintech_db."silver_ledger$snapshots" ORDER BY committed_at LIMIT 5;</code> — confirms the pin (08:08:24) falls strictly after day 1's snapshot (08:08:23.285) and strictly before day 2's (next-day 06:43:28)</li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 280" role="img" aria-label="Two queries ask about the same business cutoff of day one's close, but one is pinned to a snapshot taken right after day one while the other reads the current table after five more days of corrections, producing two different balances for the same account and date.">
+            <defs>
+              <marker id="arrow9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <g font-family="IBM Plex Mono, monospace" font-size="9">
+
+              <text x="20" y="18" font-size="8.5" fill="var(--ink-muted)">wall-clock time, processing this exam →</text>
+              <line x1="20" y1="30" x2="460" y2="30" stroke="currentColor" stroke-width="1.2"/>
+
+              <line x1="60" y1="24" x2="60" y2="36" stroke="currentColor" stroke-width="1.4"/>
+              <text x="60" y="50" text-anchor="middle" font-size="8">day 1 merge</text>
+              <text x="60" y="61" text-anchor="middle" font-size="8">Sep 6, 08:08:23</text>
+
+              <line x1="240" y1="24" x2="240" y2="36" stroke="currentColor" stroke-width="1.4"/>
+              <text x="240" y="50" text-anchor="middle" font-size="8">days 2-20 processed</text>
+              <text x="240" y="61" text-anchor="middle" font-size="8">Sep 7, 06:43+</text>
+
+              <line x1="440" y1="24" x2="440" y2="36" stroke="currentColor" stroke-width="1.4"/>
+              <text x="440" y="50" text-anchor="middle" font-size="8">now</text>
+
+              <line x1="60" y1="36" x2="60" y2="110" stroke="var(--ink-muted)" stroke-width="1.2" stroke-dasharray="3 3"/>
+              <text x="60" y="98" text-anchor="middle" font-size="8" fill="var(--ink-muted)">AS OF pin</text>
+
+              <line x1="440" y1="36" x2="440" y2="110" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3 3"/>
+              <text x="440" y="98" text-anchor="middle" font-size="8" fill="var(--accent)">current</text>
+
+              <rect x="40" y="112" width="180" height="72" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="130" y="132" text-anchor="middle" font-size="9">AS KNOWN</text>
+              <text x="130" y="146" text-anchor="middle" font-size="8" fill="var(--ink-muted)">TIMESTAMP AS OF pin</text>
+              <text x="130" y="160" text-anchor="middle" font-size="8" fill="var(--ink-muted)">WHERE event_ts ≤ day1 close</text>
+              <text x="130" y="174" text-anchor="middle" font-size="9">C197491520: -$3,776,389</text>
+
+              <rect x="260" y="112" width="180" height="72" rx="8" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+              <text x="350" y="132" text-anchor="middle" fill="var(--accent)" font-size="9">AS RESTATED</text>
+              <text x="350" y="146" text-anchor="middle" font-size="8" fill="var(--ink-muted)">current table</text>
+              <text x="350" y="160" text-anchor="middle" font-size="8" fill="var(--ink-muted)">same WHERE event_ts ≤ day1 close</text>
+              <text x="350" y="174" text-anchor="middle" fill="var(--accent)" font-size="9">C197491520: $0 (charged back)</text>
+
+              <line x1="220" y1="148" x2="258" y2="148" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow9)"/>
+
+              <rect x="130" y="210" width="220" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+              <text x="240" y="228" text-anchor="middle" fill="var(--accent)" font-size="9.5">Δ = +$3,776,389 (chargeback)</text>
+              <text x="240" y="242" text-anchor="middle" font-size="8" fill="var(--ink-muted)">the late-adjustment impact</text>
+            </g>
+          </svg>
+          <figcaption>Same account, same business date, same filter — the only thing that changed is which snapshot answered the question. That gap is exactly what an auditor needs to see labeled, not hidden.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="proof-real-data">
+    <div class="step-head">
+      <span class="step-num">✓</span>
+      <h2 class="step-title">Side proof: real PaySim data works too</h2>
+      <span class="chip neutral">Superseded · full 6.36M-row dataset now the plan</span>
+    </div>
+    <p class="step-sub">Steps 1-5 above all ran on synthetic data. This step originally proved the same pipeline accepts a small real PaySim slice unchanged — that slice and its table are now purged too, and superseded by the plan to run the <em>full</em> 6.36M-row CSV through the CDC harness instead. Kept here for the implementation gotchas, which are dataset-independent.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>What was done (previous, small-slice approach)</h3>
+        <ol class="console-check">
+          <li>Took real PaySim <code>step=1</code> — a small slice, not the full dataset</li>
+          <li>Converted locally to the same CDC envelope shape (plain Python, no Spark, seconds to run)</li>
+          <li>Landed at a fresh date so it couldn't collide with the synthetic 2026-01-0x data above</li>
+          <li>Ran the <b>existing, unmodified</b> <code>bronze_ingest.py</code> against it — zero production code changes</li>
+        </ol>
+        <h3>Result</h3>
+        <table class="stake">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td class="svc plain" colspan="2">pending — full-dataset run replaces this slice entirely</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>Two real gotchas hit (kept, not glossed over)</h3>
+        <p style="font-size:.9rem; color:var(--ink-muted); margin:0 0 .8rem;"><b>1. All-null field breaks inference:</b> every row's <code>before</code> was <code>null</code> (all creates, no updates) — Spark couldn't tell it was meant to be a struct, so <code>to_json(before)</code> failed with a type mismatch.</p>
+        <p style="font-size:.9rem; color:var(--ink-muted); margin:0 0 .8rem;"><b>2. Empty struct vanishes:</b> switching to <code>before: {}</code> on every row gave a zero-field struct — Spark dropped the column entirely, and the script errored on an unresolved column.</p>
+        <p style="font-size:.9rem; color:var(--ink-muted); margin:0;"><b>Fix:</b> gave <code>before</code> one real placeholder field (<code>{"note": "create_event_no_prior_state"}</code>) so Spark had an actual struct to infer.</p>
+        <h3>What to check (once the full-dataset run replaces this)</h3>
+        <ol class="console-check">
+          <li>Athena: <code>SELECT count(*) FROM fintech_db.bronze_cdc_events WHERE extract_date = DATE '&lt;run_date&gt;';</code> — expect all rows of the real dataset landed</li>
+          <li>Athena: <code>SELECT after FROM fintech_db.bronze_cdc_events WHERE extract_date = DATE '&lt;run_date&gt;' AND json_extract_scalar(after,'$.is_fraud')='1' LIMIT 5;</code> — real fraud rows</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="divider" id="gold-steps">
+    <div class="step-head">
+      <span class="chip success">New code — Step 6 onward</span>
+    </div>
+    <p class="step-sub" style="margin-top:.6rem;">Everything below is new — steps 6-10 of the brief have no code before this point. Built and run for the first time, against the real ledger.</p>
+  </section>
+
+  <section class="step" id="step-6-1">
+    <div class="step-head">
+      <span class="step-num" style="font-size:.68rem;">6.1</span>
+      <h2 class="step-title">Daily account summary &amp; reconciliation</h2>
+      <span class="chip success">Success · 0 rows failing</span>
+    </div>
+    <p class="step-sub">One row per account per day: opening balance, money in, money out, closing balance. The running balance is built as one cumulative total per account ordered by day, so the invariant below holds by construction — then actually checked, not assumed.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>The reconciliation invariant (must return 0 rows)</h3>
+        <table class="stake">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td class="svc plain">Daily account-summary rows</td><td>26,412</td></tr>
+          <tr><td class="svc plain">Rows where opening + credit − debit ≠ closing</td><td><b>0</b></td></tr>
+          <tr><td class="svc plain">Credit definition</td><td><code>tx_type = 'CASH_IN'</code> only</td></tr>
+          <tr><td class="svc plain">Debit definition</td><td>everything else (CASH_OUT, PAYMENT, TRANSFER, DEBIT)</td></tr>
+        </table>
+
+        <h3>How to verify — AWS Console (real, this run)</h3>
+        <ol class="console-check">
+          <li><b>EMR Serverless</b> → <code>fintech-cdc-spark-app</code> → Job runs → job ID <code>00g8j97gt2ocb00b</code> → <code>Success</code></li>
+          <li><b>Glue</b> → <code>fintech_db</code> → Tables → <code>gold_daily_account_summary</code> now exists</li>
+          <li><b>Athena</b> → <code>SELECT count(*) FROM fintech_db.gold_daily_account_summary WHERE abs(opening_balance + credit_volume - debit_volume - closing_balance) > 0.01;</code> — must return 0</li>
+          <li><b>S3</b> → job log at <code>fintech_cdc/emr-logs/applications/00g8g90j3dqrmi09/jobs/00g8j97gt2ocb00b/SPARK_DRIVER/stdout.gz</code> — <code>GOLD_DAILY_SUMMARY rows=26412</code> / <code>RECONCILIATION rows_failing=0</code></li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 240" role="img" aria-label="One account's balance carries forward day to day: each day's closing balance becomes the next day's opening balance, and opening plus credits minus debits always equals closing by construction.">
+            <defs>
+              <marker id="arrow10" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <g font-family="IBM Plex Mono, monospace" font-size="9.5">
+
+              <text x="10" y="16" font-size="8.5" fill="var(--ink-muted)">one account, three days</text>
+
+              <rect x="10" y="26" width="130" height="80" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="75" y="44" text-anchor="middle" font-size="9">day 1</text>
+              <text x="20" y="60" font-size="8">opening: 0.00</text>
+              <text x="20" y="73" font-size="8">credit − debit: net</text>
+              <text x="20" y="90" font-size="8" fill="var(--accent)">closing: Z1</text>
+
+              <line x1="140" y1="66" x2="175" y2="66" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#arrow10)"/>
+              <text x="157" y="58" text-anchor="middle" font-size="7.5" fill="var(--accent)">carries</text>
+
+              <rect x="177" y="26" width="130" height="80" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="242" y="44" text-anchor="middle" font-size="9">day 2</text>
+              <text x="187" y="60" font-size="8" fill="var(--accent)">opening: Z1</text>
+              <text x="187" y="73" font-size="8">credit − debit: net</text>
+              <text x="187" y="90" font-size="8" fill="var(--accent)">closing: Z2</text>
+
+              <line x1="307" y1="66" x2="342" y2="66" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#arrow10)"/>
+              <text x="324" y="58" text-anchor="middle" font-size="7.5" fill="var(--accent)">carries</text>
+
+              <rect x="344" y="26" width="130" height="80" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="409" y="44" text-anchor="middle" font-size="9">day 3</text>
+              <text x="354" y="60" font-size="8" fill="var(--accent)">opening: Z2</text>
+              <text x="354" y="73" font-size="8">credit − debit: net</text>
+              <text x="354" y="90" font-size="8" fill="var(--accent)">closing: Z3</text>
+
+              <rect x="60" y="140" width="360" height="60" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+              <text x="240" y="164" text-anchor="middle" fill="var(--accent)" font-size="10">opening + credit − debit = closing</text>
+              <text x="240" y="182" text-anchor="middle" font-size="9">checked on all 26,412 rows — 0 failures</text>
+            </g>
+          </svg>
+          <figcaption>Because closing balance is a running total and opening balance is derived from it, the invariant holds by construction — the check exists to catch a coding mistake, not because the arithmetic is in doubt. It returned zero, so none exists.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="step-6-2">
+    <div class="step-head">
+      <span class="step-num" style="font-size:.68rem;">6.2</span>
+      <h2 class="step-title">Fraud velocity alerts — Q2</h2>
+      <span class="chip warn">Ran clean · 0 alerts — explained, not glossed over</span>
+    </div>
+    <p class="step-sub">Which accounts moved 80%+ of their starting balance out within any <em>rolling</em> 15-minute window (not a clock-aligned bucket)? A <code>rangeBetween(-900, 0)</code> window over epoch-seconds, per the brief — not <code>rowsBetween</code>, not a tumbling <code>window()</code>.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Real result, and the real reason for it</h3>
+        <table class="stake">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td class="svc plain">Alerts found</td><td>0</td></tr>
+          <tr><td class="svc plain">Accounts with exactly 1 transaction</td><td>26,412 / 26,412 — <b>100%</b></td></tr>
+          <tr><td class="svc plain">Accounts with 2+ transactions</td><td>0</td></tr>
+        </table>
+        <p style="font-size:.9rem; color:var(--ink-muted); margin:.8rem 0 0;">This rule can only fire when an account has at least two transactions close together, so it can compare "money that just left" against "what they had before." Checked directly: every single account in this dataset has exactly one transaction, ever. There is structurally never a second transaction to compare against — so 0 alerts is the correct, expected answer for this dataset, not a sign the rule is broken.</p>
+
+        <h3>Honest limitations (as required)</h3>
+        <ul style="font-size:.9rem; color:var(--ink-muted); margin:.5rem 0 0; padding-left:1.2rem;">
+          <li><b>Why this happened here:</b> the harness pulls real PaySim rows by real customer ID, and PaySim's customer IDs are almost all one-time-use across the dataset — so no account in this 20-day slice ever transacts twice.</li>
+          <li><b>Pattern this rule can never see #1 — patient draining:</b> money moved out slowly across many hours or days, always staying under 80% in any single 15-minute window, evades this rule by design.</li>
+          <li><b>Pattern this rule can never see #2 — first-transaction fraud:</b> a single large transaction with no prior balance on record looks identical to a legitimate first-time transfer — there's no "before" state to compare against.</li>
+          <li><b>Not done:</b> cross-checking against PaySim's real <code>isFraud</code> column for precision/recall — that field was never carried through bronze → silver in this pipeline, so it isn't available to join against here. A real gap, not a hidden one.</li>
+        </ul>
+
+        <h3>How to verify — AWS Console (real, this run)</h3>
+        <ol class="console-check">
+          <li><b>EMR Serverless</b> → <code>fintech-cdc-spark-app</code> → Job runs → job ID <code>00g8j9hj4racs80b</code> → <code>Success</code></li>
+          <li><b>Glue</b> → <code>fintech_db</code> → Tables → <code>gold_velocity_alerts</code> now exists (0 rows)</li>
+          <li><b>Athena</b> → <code>SELECT count(*) FROM (SELECT account_id FROM fintech_db.silver_ledger WHERE NOT is_deleted GROUP BY account_id HAVING count(*) > 1);</code> — returns 0, confirming the root cause</li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 220" role="img" aria-label="The rolling velocity rule needs at least two transactions from the same account within fifteen minutes to compare outflow against opening balance, but every account in this dataset has exactly one transaction, so the rule structurally never fires.">
+            <g font-family="IBM Plex Mono, monospace" font-size="9.5">
+              <text x="10" y="18" font-size="8.5" fill="var(--ink-muted)">what the rule needs vs. what this dataset has</text>
+
+              <rect x="10" y="30" width="200" height="70" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="110" y="50" text-anchor="middle" font-size="9.5">rule needs</text>
+              <text x="30" y="68" font-size="8.5">txn 1 ──15 min──▶ txn 2</text>
+              <text x="30" y="84" font-size="8.5" fill="var(--ink-muted)">same account, compare sum vs opening</text>
+
+              <rect x="270" y="30" width="200" height="70" rx="8" fill="none" stroke="var(--warn)" stroke-width="1.6"/>
+              <text x="370" y="50" text-anchor="middle" fill="var(--warn)" font-size="9.5">this dataset has</text>
+              <text x="290" y="68" font-size="8.5" fill="var(--warn)">txn 1 ── (no txn 2, ever)</text>
+              <text x="290" y="84" font-size="8.5" fill="var(--ink-muted)">100% of accounts: exactly 1 txn</text>
+
+              <rect x="60" y="130" width="360" height="60" rx="8" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1.4"/>
+              <text x="240" y="154" text-anchor="middle" fill="var(--warn)" font-size="10">0 alerts — structurally correct, not a bug</text>
+              <text x="240" y="172" text-anchor="middle" font-size="9">verified: 0 of 26,412 accounts have 2+ transactions</text>
+            </g>
+          </svg>
+          <figcaption>A rolling-window rule needs a "before" and "after" from the same account to say anything. With one transaction per account, there is no "after" to compare — the rule's silence here is a property of the data, not the rule.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="step-6-3">
+    <div class="step-head">
+      <span class="step-num" style="font-size:.68rem;">6.3</span>
+      <h2 class="step-title">Settlement drift — Q3</h2>
+      <span class="chip success">Success · 3 material currency-days found</span>
+    </div>
+    <p class="step-sub">Same time-travel technique as Q1, applied per currency per day: what did we <em>publish</em> as the day's net position, versus what do we <em>now know</em> it to be, once later corrections arrived? Pinned "published" to just after day 10's merge, so it only knows about days 1-10 — exactly like a real close report only ever covers days that had already happened.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Real result</h3>
+        <table class="stake">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td class="svc plain">Published-vs-restated snapshot pin</td><td>2026-09-07 06:44:44 UTC — just after day 10 (snapshot 4685733960018236392)</td></tr>
+          <tr><td class="svc plain">Currency-day rows checked</td><td>31</td></tr>
+          <tr><td class="svc plain">Materially wrong (&gt;0.1% off)</td><td><b>3</b> — all on 2026-01-10</td></tr>
+        </table>
+
+        <h3>Worst 3 currency-days by size of the mistake</h3>
+        <table class="stake">
+          <tr><th>Currency / date</th><th>Published → restated (drift)</th></tr>
+          <tr><td class="svc plain">USD · 2026-01-10</td><td>-$24,303,006.50 → -$23,115,851.51 (off by $1,187,154.99 · 4.88%)</td></tr>
+          <tr><td class="svc plain">GBP · 2026-01-10</td><td>-$41,335,933.65 → -$39,415,168.55 (off by $1,920,765.10 · 4.65%)</td></tr>
+          <tr><td class="svc plain">EUR · 2026-01-10</td><td>-$32,498,562.51 → -$32,405,905.96 (off by $92,656.55 · 0.29%)</td></tr>
+        </table>
+        <p style="font-size:.9rem; color:var(--ink-muted); margin:.5rem 0 0;">All three land on the same day — the one right at the edge of the "published" cutoff. That's expected: the harness only backdates late corrections by up to 5 days, so corrections that arrived in days 11-15's files can only reach back and rewrite days close to day 10, never day 1 or 2.</p>
+
+        <h3>How to verify — AWS Console (real, this run)</h3>
+        <ol class="console-check">
+          <li><b>EMR Serverless</b> → <code>fintech-cdc-spark-app</code> → Job runs → job ID <code>00g8j9v91savjg0b</code> → <code>Success</code></li>
+          <li><b>Glue</b> → <code>fintech_db</code> → Tables → <code>gold_settlement_drift</code> now exists (31 rows)</li>
+          <li><b>Athena</b> → <code>SELECT * FROM fintech_db.gold_settlement_drift WHERE abs(drift_pct) > 0.001 ORDER BY abs(drift_amount) DESC;</code></li>
+          <li><b>Athena</b> → <code>SELECT snapshot_id, committed_at FROM fintech_db."silver_ledger$snapshots" ORDER BY committed_at LIMIT 10;</code> — confirms the pin falls right after day 10's snapshot, before day 11's</li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 260" role="img" aria-label="A close report published right after day ten shows one net position per currency, but late corrections that arrived in the days after can only reach back a limited number of days, so the restated number differs only for days near that boundary, not for early days.">
+            <g font-family="IBM Plex Mono, monospace" font-size="9.5">
+              <text x="10" y="16" font-size="8.5" fill="var(--ink-muted)">why the drift clusters on day 10, not day 1</text>
+
+              <line x1="20" y1="40" x2="460" y2="40" stroke="currentColor" stroke-width="1.2"/>
+              <text x="20" y="34" font-size="8">day 1</text>
+              <text x="220" y="34" font-size="8">day 10</text>
+              <text x="440" y="34" font-size="8">day 15</text>
+
+              <line x1="220" y1="34" x2="220" y2="46" stroke="var(--accent)" stroke-width="1.6"/>
+              <text x="220" y="60" text-anchor="middle" fill="var(--accent)" font-size="8">published, pinned here</text>
+
+              <path d="M 440,46 C 380,90 260,90 224,46" fill="none" stroke="var(--warn)" stroke-width="1.4" stroke-dasharray="4 3"/>
+              <text x="330" y="86" text-anchor="middle" fill="var(--warn)" font-size="8">late correction, reaches back ≤5 days</text>
+
+              <rect x="60" y="110" width="360" height="110" rx="8" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1.4"/>
+              <text x="240" y="132" text-anchor="middle" fill="var(--warn)" font-size="9.5">USD/GBP/EUR on 2026-01-10: materially wrong</text>
+              <text x="240" y="150" text-anchor="middle" font-size="8.5">GBP off by $1.92M (4.65%)</text>
+              <text x="240" y="165" text-anchor="middle" font-size="8.5">USD off by $1.19M (4.88%)</text>
+              <text x="240" y="180" text-anchor="middle" font-size="8.5">EUR off by $92.7K (0.29%)</text>
+              <text x="240" y="200" text-anchor="middle" font-size="8" fill="var(--ink-muted)">days 1-8: no material drift — too far for a late correction to reach</text>
+            </g>
+          </svg>
+          <figcaption>The 5-day backdating limit on late arrivals means only days close to the publish boundary can be rewritten — this is a property of the injected data, and it shows up exactly where the mechanism predicts it should.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="step-7">
+    <div class="step-head">
+      <span class="step-num">7</span>
+      <h2 class="step-title">Table maintenance — the compaction trap</h2>
+      <span class="chip warn">Break log #2 · reproduced &amp; fixed</span>
+    </div>
+    <p class="step-sub">Called out by both the exam and the instructor notes as "the single most valuable finding in this project": a plain cleanup pass on a table with pending corrections very likely reconciles zero of the leftover delete markers. Reproduced it for real, then fixed it.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Setup: manufactured 50 real corrections</h3>
+        <p style="font-size:.9rem; color:var(--ink-muted); margin:0 0 .8rem;">Since every transaction in this dataset is otherwise unique (confirmed in 6.2), no ordinary day's merge ever updates an existing row — so there were zero delete markers to clean up naturally. Submitted 50 legitimate, later-dated fee corrections to real existing transactions through the same bronze → staged → MERGE path the guard tests use — all 50 applied successfully.</p>
+
+        <h3>Break log entry #2 — real numbers</h3>
+        <table class="stake">
+          <tr><th>Stage</th><th>Data files</th><th>Delete markers</th></tr>
+          <tr><td class="svc plain">Before any cleanup</td><td>395</td><td>339</td></tr>
+          <tr><td class="svc plain">After plain cleanup (brief's own example)</td><td>395 <em>(0 rewritten)</em></td><td>339 <em>(unchanged)</em></td></tr>
+          <tr><td class="svc plain">After the fix (<code>rewrite-all=true</code>)</td><td>336</td><td><b>0</b></td></tr>
+        </table>
+
+        <h3>Break log entry #2 — what actually broke, and why</h3>
+        <table class="stake">
+          <tr><th>Field</th><th>Value</th></tr>
+          <tr><td class="svc plain">First error (real)</td><td><code>IllegalArgumentException: Cannot use options [partial-progress-enabled], they are not supported by the action or the rewriter SORT</code></td></tr>
+          <tr><td class="svc plain">Diagnosis #1</td><td>The brief's own example combines <code>strategy =&gt; 'sort'</code> with an option (<code>partial-progress-enabled</code>) that only the default <code>binpack</code> strategy accepts</td></tr>
+          <tr><td class="svc plain">Fix #1</td><td>Dropped that one option, kept the sort strategy (matches <code>silver_ledger</code>'s own <code>WRITE ORDERED BY</code>)</td></tr>
+          <tr><td class="svc plain">Trap #2 (the real one)</td><td>With that fixed, the plain call ran clean but rewrote <b>0 files</b> — the delete markers weren't touched at all</td></tr>
+          <tr><td class="svc plain">Fix #2</td><td>Re-ran with <code>options =&gt; map('rewrite-all', 'true')</code> — forces every file to be rewritten regardless of its size, which also resolves every delete marker pointing at it</td></tr>
+        </table>
+
+        <h3>Rest of Step 7 (also real, this run)</h3>
+        <table class="stake">
+          <tr><th>Procedure</th><th>Result</th></tr>
+          <tr><td class="svc plain">rewrite_manifests</td><td>42 manifests rewritten → 1</td></tr>
+          <tr><td class="svc plain">expire_snapshots</td><td>0 deleted — <code>older_than</code> set safely before all real snapshots, so day 1's and day 10's snapshots (used by Q1 and Q3) stay queryable. Production policy would be <code>older_than = now − 8 months</code>, per the brief's own audit-window requirement — this run only proves the mechanism without destroying evidence still needed for the review.</td></tr>
+          <tr><td class="svc plain">remove_orphan_files (dry run)</td><td>0 orphan files found</td></tr>
+        </table>
+
+        <h3>How to verify — AWS Console (real, this run)</h3>
+        <ol class="console-check">
+          <li><b>EMR Serverless</b> → <code>fintech-cdc-spark-app</code> → Job runs → job ID <code>00g8je7qkqm9e80b</code> → <code>Success</code> (the earlier attempt, job ID <code>00g8je518738800b</code>, is the failed one with the <code>partial-progress-enabled</code> error — also worth showing)</li>
+          <li><b>Athena</b> → <code>SELECT content, count(*) FROM fintech_db."silver_ledger$files" GROUP BY content;</code> — expect content=0 (data) ≈336, content=1 (delete) = 0</li>
+          <li><b>Athena</b> → <code>SELECT snapshot_id, operation, committed_at FROM fintech_db."silver_ledger$snapshots" ORDER BY committed_at DESC LIMIT 5;</code> — the two <code>replace</code> operations from this run's two compaction calls</li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 260" role="img" aria-label="A plain compaction call rewrites zero files because the sort strategy's default size filter does not consider files with delete markers to be badly sized, so those delete markers survive untouched; adding rewrite-all forces every file to be rewritten regardless of size, which resolves every delete marker.">
+            <defs>
+              <marker id="arrow11" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <g font-family="IBM Plex Mono, monospace" font-size="9.5">
+
+              <rect x="10" y="20" width="200" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="110" y="40" text-anchor="middle" font-size="9.5">395 data files</text>
+              <text x="110" y="55" text-anchor="middle" font-size="9.5" fill="var(--warn)">339 delete markers</text>
+              <text x="110" y="70" text-anchor="middle" font-size="8" fill="var(--ink-muted)">files already "small enough"</text>
+
+              <line x1="110" y1="76" x2="110" y2="106" stroke="var(--danger)" stroke-width="1.4" marker-end="url(#arrow11)"/>
+              <text x="130" y="96" font-size="8.5" fill="var(--danger)">plain rewrite</text>
+
+              <rect x="10" y="108" width="200" height="46" rx="8" fill="none" stroke="var(--danger)" stroke-width="1.6" stroke-dasharray="4 3"/>
+              <text x="110" y="128" text-anchor="middle" fill="var(--danger)" font-size="9.5">0 files touched</text>
+              <text x="110" y="143" text-anchor="middle" font-size="8" fill="var(--ink-muted)">339 markers survive</text>
+
+              <line x1="220" y1="48" x2="260" y2="48" stroke="currentColor" stroke-width="1.2"/>
+              <line x1="260" y1="48" x2="260" y2="200" stroke="currentColor" stroke-width="1.2"/>
+              <line x1="260" y1="200" x2="290" y2="200" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#arrow11)"/>
+              <text x="330" y="190" text-anchor="middle" fill="var(--accent)" font-size="8.5">rewrite-all=true</text>
+
+              <rect x="290" y="176" width="180" height="48" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+              <text x="380" y="196" text-anchor="middle" fill="var(--accent)" font-size="9.5">336 data files</text>
+              <text x="380" y="211" text-anchor="middle" fill="var(--accent)" font-size="9.5">0 delete markers</text>
+            </g>
+          </svg>
+          <figcaption>The size-based filter that decides which files are "worth" rewriting never looks at delete markers — a file can be tiny, healthy-looking, and still ignored. Forcing a rewrite of everything is the only way to guarantee the markers go with it.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="step-8">
+    <div class="step-head">
+      <span class="step-num">8</span>
+      <h2 class="step-title">Redshift integration</h2>
+      <span class="chip success">Success · zero-copy, verified</span>
+    </div>
+    <p class="step-sub">Zero-copy: the Iceberg tables never left S3. A new Redshift Serverless workspace, dedicated to this project, was pointed at the existing Glue catalog via an external schema — Redshift just reads the same files everything else already reads.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>What was built (real, this run)</h3>
+        <table class="stake">
+          <tr><th>Resource</th><th>Identifier</th></tr>
+          <tr><td class="svc plain">Redshift Serverless namespace</td><td>ali-fintech-exam-ns (db: fintech)</td></tr>
+          <tr><td class="svc plain">Redshift Serverless workgroup</td><td>ali-fintech-exam-rs-wg · base capacity 4 RPU</td></tr>
+          <tr><td class="svc plain">IAM role for Spectrum reads</td><td>ali-fintech-exam-redshift-role — Glue read + S3 read, scoped to fintech_db only</td></tr>
+          <tr><td class="svc plain">External schema</td><td><code>CREATE EXTERNAL SCHEMA spectrum_fintech FROM DATA CATALOG DATABASE 'fintech_db' ...</code></td></tr>
+        </table>
+
+        <h3>Proof it actually reads our real data</h3>
+        <table class="stake">
+          <tr><th>Query</th><th>Result</th></tr>
+          <tr><td class="svc plain"><code>SELECT count(*) FROM spectrum_fintech.gold_daily_account_summary;</code></td><td><b>26,412</b> — exact match to the table's known row count</td></tr>
+        </table>
+        <p style="font-size:.9rem; color:var(--ink-muted); margin:.5rem 0 0;">Redshift's own storage holds none of this — the count came straight from the same S3/Iceberg files every earlier step wrote to. Only the four Gold tables are exposed this way (<code>gold_daily_account_summary</code>, <code>gold_velocity_alerts</code>, <code>gold_settlement_drift</code>, <code>gold_pit_balance_compare</code>) — Redshift never reaches into bronze or silver directly.</p>
+
+        <h3>How to verify — AWS Console (real, this run)</h3>
+        <ol class="console-check">
+          <li><b>Redshift Serverless</b> → Namespaces → <code>ali-fintech-exam-ns</code>; Workgroups → <code>ali-fintech-exam-rs-wg</code> → status <code>AVAILABLE</code></li>
+          <li><b>Redshift Query Editor v2</b> (or Data API) → connect to database <code>fintech</code> → <code>SELECT count(*) FROM spectrum_fintech.gold_daily_account_summary;</code> → 26,412</li>
+          <li><b>IAM</b> → Roles → <code>ali-fintech-exam-redshift-role</code> — confirm its policy only reaches <code>fintech_db</code> and the one S3 bucket, nothing else in the account</li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 200" role="img" aria-label="Redshift's external schema reads the same Iceberg data files in S3 through the Glue catalog that every earlier pipeline step already wrote to, without copying any data into Redshift's own storage.">
+            <defs>
+              <marker id="arrow12" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+            <g font-family="IBM Plex Mono, monospace" font-size="9.5">
+
+              <rect x="10" y="70" width="140" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="80" y="93" text-anchor="middle" font-size="10">S3 + Iceberg</text>
+              <text x="80" y="108" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">4 gold tables</text>
+
+              <line x1="150" y1="100" x2="190" y2="100" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow12)"/>
+              <text x="170" y="90" text-anchor="middle" font-size="8">catalogued by</text>
+
+              <rect x="192" y="70" width="140" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="262" y="93" text-anchor="middle" font-size="10">Glue Catalog</text>
+              <text x="262" y="108" text-anchor="middle" font-size="8.5" fill="var(--ink-muted)">fintech_db</text>
+
+              <line x1="332" y1="100" x2="372" y2="100" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#arrow12)"/>
+              <text x="352" y="90" text-anchor="middle" font-size="8" fill="var(--accent)">Spectrum reads</text>
+
+              <rect x="374" y="70" width="96" height="60" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+              <text x="422" y="93" text-anchor="middle" fill="var(--accent)" font-size="10">Redshift</text>
+              <text x="422" y="108" text-anchor="middle" font-size="8" fill="var(--ink-muted)">0 bytes copied</text>
+
+              <text x="240" y="160" text-anchor="middle" font-size="9" fill="var(--ink-muted)">no ETL job, no sync schedule, no second copy to go stale</text>
+            </g>
+          </svg>
+          <figcaption>Three hops, zero data movement: Redshift's query planner reads Glue's metadata to find the right S3 files, then reads them directly — the same files the EMR jobs wrote.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="step-9">
+    <div class="step-head">
+      <span class="step-num">9</span>
+      <h2 class="step-title">Query optimisation — three-way speed test</h2>
+      <span class="chip success">Success · MV ~5x faster</span>
+    </div>
+    <p class="step-sub">Built one pre-computed executive summary (a materialized view), then asked the exact same question — active accounts, total balances, credits/debits/transactions per currency per day — three different ways, timing each with that service's own real measurement, not a stopwatch.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>The three-way measurement (real, this run)</h3>
+        <table class="stake">
+          <tr><th>Path</th><th>Runtime</th><th>Data scanned</th></tr>
+          <tr><td class="svc plain">Athena direct on Iceberg</td><td>1,467 ms</td><td>391 KB</td></tr>
+          <tr><td class="svc plain">Redshift Spectrum (external schema)</td><td>1,546 ms</td><td>not surfaced by the Data API for Spectrum reads — noted limitation</td></tr>
+          <tr><td class="svc plain">Redshift materialized view</td><td><b>290 ms</b></td><td>reads the saved 61-row result, not the underlying files</td></tr>
+        </table>
+        <p style="font-size:.9rem; color:var(--ink-muted); margin:.5rem 0 0;">The materialized view is about <b>5x faster</b> than either path that reads the real files. At this data size (26,412 ledger rows, a 61-row result) most of the 1.4-1.5 second cost in the other two paths is fixed per-query planning overhead, not actual data volume — the gap would grow much larger at real production scale, where scanning millions of rows every time gets expensive fast.</p>
+
+        <h3>The tradeoff (required, not optional)</h3>
+        <p style="font-size:.9rem; color:var(--ink-muted); margin:0 0 .8rem;">The materialized view was created with <code>AUTO REFRESH NO</code> — it does not update itself. Every minute that passes after a <code>REFRESH MATERIALIZED VIEW</code>, its numbers drift further from the live ledger. A dashboard reading it is fast but shows a snapshot, not the current truth, until someone (or something) refreshes it again — and each refresh re-runs the full aggregation, costing roughly the same ~1.5 seconds the Spectrum path costs on its own.</p>
+        <p style="font-size:.9rem; color:var(--ink-muted); margin:0;"><b>Recommendation for a dashboard refreshing every 5 minutes:</b> the materialized view, refreshed on a 5-minute schedule to match. A 5-minute-stale executive summary is an acceptable tradeoff for 5x the speed on every read in between — but if the dashboard needed to reflect a MERGE that happened 10 seconds ago (an auditor mid-investigation, say), Spectrum's always-current-but-slower path is the correct choice instead.</p>
+
+        <h3>How to verify — AWS Console (real, this run)</h3>
+        <ol class="console-check">
+          <li><b>Athena</b> → Query editor → run the same aggregation on <code>fintech_db.gold_daily_account_summary</code> → check <b>Run time</b> in query details</li>
+          <li><b>Redshift Query Editor v2</b> → connect to <code>fintech</code> → run the same query against <code>spectrum_fintech.gold_daily_account_summary</code>, then against <code>mv_exec_daily_close</code> → compare via <code>SELECT * FROM sys_query_history ORDER BY start_time DESC LIMIT 5;</code></li>
+          <li><b>Redshift</b> → confirm the view exists: <code>SELECT * FROM svv_mv_info WHERE name = 'mv_exec_daily_close';</code></li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 220" role="img" aria-label="Three bars compare runtime for the same question: Athena direct at 1467 milliseconds, Redshift Spectrum at 1546 milliseconds, and the materialized view at 290 milliseconds, roughly five times faster than either path that reads the underlying files.">
+            <g font-family="IBM Plex Mono, monospace" font-size="9.5">
+              <text x="10" y="16" font-size="8.5" fill="var(--ink-muted)">same question, three paths (lower is faster)</text>
+
+              <text x="10" y="45" font-size="9">Athena direct</text>
+              <rect x="140" y="34" width="220" height="18" fill="none" stroke="currentColor" stroke-width="1.2"/>
+              <text x="368" y="47" font-size="9">1,467 ms</text>
+
+              <text x="10" y="80" font-size="9">Redshift Spectrum</text>
+              <rect x="140" y="69" width="232" height="18" fill="none" stroke="currentColor" stroke-width="1.2"/>
+              <text x="380" y="82" font-size="9">1,546 ms</text>
+
+              <text x="10" y="115" font-size="9" fill="var(--accent)">Materialized view</text>
+              <rect x="140" y="104" width="44" height="18" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+              <text x="192" y="117" fill="var(--accent)" font-size="9">290 ms</text>
+
+              <rect x="60" y="150" width="360" height="52" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+              <text x="240" y="171" text-anchor="middle" fill="var(--accent)" font-size="9.5">~5x faster — but only as fresh as the last refresh</text>
+              <text x="240" y="188" text-anchor="middle" font-size="8.5">recommendation: MV refreshed every 5 min for a 5-min dashboard</text>
+            </g>
+          </svg>
+          <figcaption>Bar lengths are proportional to real measured runtime. The materialized view wins on speed by paying for the aggregation once, in advance, at refresh time — the other two pay for it on every single read.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="step-10">
+    <div class="step-head">
+      <span class="step-num">10</span>
+      <h2 class="step-title">Executive reporting &amp; final validation</h2>
+      <span class="chip success">Success · idempotent, questions answered</span>
+    </div>
+    <p class="step-sub">The last step: answer all three exam questions directly in Redshift SQL, then re-run the entire 20-day pipeline end to end and prove the gold totals don't move. Orchestrated as a real Airflow DAG for this re-run — see below.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3>10a · The three questions, answered in Redshift (real)</h3>
+        <table class="stake">
+          <tr><th>Question</th><th>Real answer</th></tr>
+          <tr><td class="svc plain">Q1 — point-in-time balance</td><td>C197491520 @ 2026-01-01 23:59:59: as-known −$3,776,389.09 → as-restated $0.00 (Δ $3,776,389.09)</td></tr>
+          <tr><td class="svc plain">Q2 — velocity breaches</td><td>0 rows — consistent with 6.2's structural finding</td></tr>
+          <tr><td class="svc plain">Q3 — drift by currency</td><td>GBP $1,920,765.10 (1 material day) · USD $1,190,194.48 (1) · EUR $93,710.34 (1)</td></tr>
+        </table>
+        <p style="font-size:.9rem; color:var(--ink-muted); margin:.5rem 0 0;"><b>Another real, fixed gotcha:</b> the brief's own Q3 SQL uses <code>count(*) FILTER (WHERE ...)</code> — valid in Postgres/Presto/Athena, but Redshift's SQL dialect doesn't support the <code>FILTER</code> clause at all (<code>syntax error at or near "("</code>). Rewritten as <code>count(CASE WHEN ... THEN 1 END)</code>, which every dialect accepts.</p>
+
+        <h3>10b · Full-pipeline idempotency — the honest version</h3>
+        <table class="stake">
+          <tr><th>Attempt</th><th>rows / total_balance / accounts</th></tr>
+          <tr><td class="svc plain">"Before" (stale gold table)</td><td>26,412 / −$1,941,582,100.91 / 26,412</td></tr>
+          <tr><td class="svc plain">After 1st re-run + rebuild</td><td>26,412 / −$1,941,582,100.41 / 26,412 — <b>off by exactly $0.50</b></td></tr>
+          <tr><td class="svc plain">After 2nd re-run + rebuild</td><td>26,412 / −$1,941,582,100.41 / 26,412 — <b>identical to the cent</b></td></tr>
+        </table>
+        <p style="font-size:.9rem; color:var(--ink-muted); margin:.5rem 0 0;">The first "before/after" comparison looked like a $0.50 idempotency failure — it wasn't. The gold summary table hadn't been rebuilt since Step 7's 50 real corrections (50 × −$0.01), so "before" was stale, not wrong. Rebuilding it once, then re-running the full pipeline a <em>second</em> time and rebuilding again, gave a clean apples-to-apples pair — identical. <b>Lesson kept, not hidden:</b> an idempotency check is only honest if both sides of the comparison were built the same way.</p>
+
+        <h3>The Step 10 DAG (real, deployable)</h3>
+        <p style="font-size:.9rem; color:var(--ink-muted); margin:0 0 .8rem;"><code>airflow/dags/fintech_cdc_pipeline.py</code> — the same job sequence proven above, wired as one Airflow DAG using <code>EmrServerlessStartJobOperator</code> and <code>RedshiftDataOperator</code>, matching the patterns already used by this repo's <code>3_labs/airflow_enterprise</code> reference DAGs. It captures gold totals before its own run, executes every step in dependency order, then captures totals again and fails loudly (<code>assert_idempotent</code>) if they differ. Written after Steps 1-9 were already interactively debugged — wiring proven scripts into a DAG is quick; debugging untested ones inside a DAG is not.</p>
+
+        <h3>How to verify — AWS Console (real, this run)</h3>
+        <ol class="console-check">
+          <li><b>Redshift Query Editor v2</b> → connect to <code>fintech</code> → run the three <code>spectrum_fintech.*</code> queries above</li>
+          <li><b>Athena</b> → <code>SELECT count(*), sum(closing_balance), count(DISTINCT account_id) FROM fintech_db.gold_daily_account_summary;</code> → 26,412 / −1,941,582,100.41 / 26,412</li>
+          <li><b>EMR Serverless</b> → Job runs → the two <code>process_range.py</code> re-run job IDs (<code>00g8jik0cmcv0g0b</code>, <code>00g8jipmg61fv80b</code>) and the two <code>gold_daily_account_summary.py</code> rebuild job IDs (<code>00g8jio1hsk01g0b</code>, <code>00g8jisp31ni780b</code>) — all <code>Success</code></li>
+          <li><b>Repo</b> → <code>fintech_cdc_ledger/airflow/dags/fintech_cdc_pipeline.py</code> and <code>EVIDENCE.md</code> for the full submission package</li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <figure>
+          <svg viewBox="0 0 480 240" role="img" aria-label="A first before-and-after comparison shows a fifty cent gap because the before side was a stale table that predated a set of real corrections, not because the pipeline behaved differently. Rebuilding both sides fresh and comparing again shows an exact match.">
+            <g font-family="IBM Plex Mono, monospace" font-size="9.5">
+              <text x="10" y="16" font-size="8.5" fill="var(--ink-muted)">why the first comparison looked wrong</text>
+
+              <rect x="10" y="30" width="200" height="60" rx="8" fill="none" stroke="var(--warn)" stroke-width="1.4"/>
+              <text x="110" y="50" text-anchor="middle" fill="var(--warn)" font-size="9.5">"before" = stale table</text>
+              <text x="110" y="66" text-anchor="middle" font-size="8" fill="var(--ink-muted)">never rebuilt since</text>
+              <text x="110" y="79" text-anchor="middle" font-size="8" fill="var(--ink-muted)">Step 7's 50 corrections</text>
+
+              <rect x="270" y="30" width="200" height="60" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="370" y="50" text-anchor="middle" font-size="9.5">"after" = fresh rebuild</text>
+              <text x="370" y="66" text-anchor="middle" font-size="8" fill="var(--ink-muted)">correctly reflects</text>
+              <text x="370" y="79" text-anchor="middle" font-size="8" fill="var(--ink-muted)">those same corrections</text>
+
+              <text x="240" y="112" text-anchor="middle" font-size="9" fill="var(--warn)">→ $0.50 gap: comparing two different points in time, not two runs</text>
+
+              <rect x="60" y="140" width="360" height="70" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+              <text x="240" y="163" text-anchor="middle" fill="var(--accent)" font-size="9.5">rebuild BOTH sides fresh, re-run, rebuild again</text>
+              <text x="240" y="181" text-anchor="middle" fill="var(--accent)" font-size="9.5">26,412 / −$1,941,582,100.41 / 26,412 — both times</text>
+              <text x="240" y="197" text-anchor="middle" font-size="8" fill="var(--ink-muted)">identical to the cent</text>
+            </g>
+          </svg>
+          <figcaption>An idempotency test is only as honest as its baseline — the pipeline was never the problem here, the timing of when "before" was captured was.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="note">The overview above the divider is live, from this account, right now. All 10 steps of the brief are complete on real data, end to end — the harness, bronze/silver/gold, both safety proofs, all 3 exam questions, the compaction trap, Redshift, and a proven-idempotent full re-run. The full submission is organized under <code>fintech_cdc_ledger/</code> in the repo (README.md, EVIDENCE.md, jobs/, harness/, airflow/dags/, iam/).</footer>

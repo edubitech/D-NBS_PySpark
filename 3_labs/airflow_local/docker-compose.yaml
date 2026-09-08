@@ -43,6 +43,11 @@ x-airflow-common: &airflow-common
     - ./work:/opt/airflow/work            # Spark warehouse + DAG outputs live here
     - ./landing:/opt/airflow/landing      # drop files here for the sensor DAG
     - ../iceberg_deep:/opt/airflow/labs/iceberg_deep:ro
+    # visual check only, see fintech_cdc_ledger/README.md — flat, not a subfolder,
+    # so fintech_cdc_pipeline.py's `import fintech_config` resolves the same way
+    # lab_config.py does for the numbered DAGs above
+    - ../../fintech_cdc_ledger/airflow/dags/fintech_config.py:/opt/airflow/dags/fintech_config.py:ro
+    - ../../fintech_cdc_ledger/airflow/dags/fintech_cdc_pipeline.py:/opt/airflow/dags/fintech_cdc_pipeline.py:ro
     - ivy-cache:/home/airflow/.ivy2       # Iceberg runtime jar, downloaded once
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on: &airflow-common-depends-on

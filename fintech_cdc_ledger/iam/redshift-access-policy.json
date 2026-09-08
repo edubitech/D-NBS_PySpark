@@ -1,0 +1,28 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "GlueCatalogRead",
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetDatabase", "glue:GetDatabases",
+        "glue:GetTable", "glue:GetTables",
+        "glue:GetPartition", "glue:GetPartitions", "glue:BatchGetPartition"
+      ],
+      "Resource": [
+        "arn:aws:glue:us-east-1:275829498730:catalog",
+        "arn:aws:glue:us-east-1:275829498730:database/fintech_db",
+        "arn:aws:glue:us-east-1:275829498730:table/fintech_db/*"
+      ]
+    },
+    {
+      "Sid": "S3WarehouseRead",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:ListBucket"],
+      "Resource": [
+        "arn:aws:s3:::ali-iceberg-schema-demo-275829498730",
+        "arn:aws:s3:::ali-iceberg-schema-demo-275829498730/fintech_cdc/*"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,180 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Minimal CI/CD pipeline for the FinTech CDC Ledger DAG: Source (GitHub) ->
+  Test (CodeBuild validates the DAG) -> Deploy (CodeBuild syncs it to the
+  MWAA dags/ S3 prefix). Mirrors the official AWS pattern (CodePipeline +
+  CodeBuild + CloudFormation) at the smallest scale that still has all
+  three real gates. Replaces the manual `aws s3 cp ... dags/` step this
+  project ran by hand.
+
+Parameters:
+  GitHubOwner:
+    Type: String
+    Description: GitHub org/user that owns the source repo
+  GitHubRepo:
+    Type: String
+    Default: D-NBS_PySpark
+  GitHubBranch:
+    Type: String
+    Default: main
+  MwaaDagsBucket:
+    Type: String
+    Default: ali-fintech-mwaa-275829498730
+    Description: Existing S3 bucket MWAA reads its dags/ prefix from
+
+Resources:
+
+  # One-time GitHub OAuth link. After this stack creates it, go to
+  # CodePipeline console -> Settings -> Connections and click
+  # "Update pending connection" once — CloudFormation cannot do this step.
+  GitHubConnection:
+    Type: AWS::CodeStarConnections::Connection
+    Properties:
+      ConnectionName: ali-fintech-github-connection
+      ProviderType: GitHub
+
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ali-fintech-cicd-artifacts-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ali-fintech-cicd-codebuild-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: codebuild.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ali-fintech-cicd-codebuild-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/ali-fintech-*
+              - Effect: Allow
+                Action: [s3:GetObject, s3:GetObjectVersion, s3:PutObject]
+                Resource: !Sub arn:${AWS::Partition}:s3:::${ArtifactBucket}/*
+              - Effect: Allow
+                Action: [s3:ListBucket]
+                Resource: !Sub arn:${AWS::Partition}:s3:::${ArtifactBucket}
+              - Effect: Allow
+                Action: [s3:PutObject, s3:DeleteObject, s3:ListBucket, s3:GetObject]
+                Resource:
+                  - !Sub arn:aws:s3:::${MwaaDagsBucket}
+                  - !Sub arn:aws:s3:::${MwaaDagsBucket}/dags/*
+
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ali-fintech-cicd-pipeline-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: codepipeline.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ali-fintech-cicd-pipeline-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [s3:GetObject, s3:GetObjectVersion, s3:PutObject, s3:GetBucketVersioning]
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::${ArtifactBucket}
+                  - !Sub arn:${AWS::Partition}:s3:::${ArtifactBucket}/*
+              - Effect: Allow
+                Action: [codestar-connections:UseConnection]
+                Resource: !Ref GitHubConnection
+              - Effect: Allow
+                Action: [codebuild:BatchGetBuilds, codebuild:StartBuild]
+                Resource:
+                  - !GetAtt TestProject.Arn
+                  - !GetAtt DeployProject.Arn
+
+  # ---- Test stage: does the DAG even parse? Fails the pipeline if not. ----
+  TestProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: ali-fintech-dag-test
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts: { Type: CODEPIPELINE }
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: fintech_cdc_ledger/cicd/buildspec-test.yml
+
+  # ---- Deploy stage: sync the validated DAG to MWAA's dags/ prefix. -------
+  DeployProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: ali-fintech-dag-deploy
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts: { Type: CODEPIPELINE }
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+        EnvironmentVariables:
+          - { Name: MWAA_DAGS_BUCKET, Value: !Ref MwaaDagsBucket }
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: fintech_cdc_ledger/cicd/buildspec-deploy.yml
+
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: ali-fintech-dag-pipeline
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: GitHubSource
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: '1'
+              Configuration:
+                ConnectionArn: !Ref GitHubConnection
+                FullRepositoryId: !Sub ${GitHubOwner}/${GitHubRepo}
+                BranchName: !Ref GitHubBranch
+              OutputArtifacts: [{ Name: SourceOutput }]
+        - Name: Test
+          Actions:
+            - Name: ValidateDag
+              ActionTypeId: { Category: Build, Owner: AWS, Provider: CodeBuild, Version: '1' }
+              Configuration: { ProjectName: !Ref TestProject }
+              InputArtifacts: [{ Name: SourceOutput }]
+              OutputArtifacts: [{ Name: TestOutput }]
+        - Name: Deploy
+          Actions:
+            - Name: SyncToMwaa
+              ActionTypeId: { Category: Build, Owner: AWS, Provider: CodeBuild, Version: '1' }
+              Configuration: { ProjectName: !Ref DeployProject }
+              InputArtifacts: [{ Name: TestOutput }]
+
+Outputs:
+  ConnectionArn:
+    Value: !Ref GitHubConnection
+    Description: Go authorize this in the CodePipeline console before the pipeline can pull source
+  PipelineName:
+    Value: !Ref Pipeline

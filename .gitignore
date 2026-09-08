@@ -10,3 +10,8 @@ __pycache__/
 3_labs/airflow_local/work/*
 3_labs/airflow_local/landing/*
 !3_labs/airflow_local/**/.gitkeep
+
+# real Kaggle PaySim source CSV (471MB) — over GitHub's 100MB file limit,
+# not something to check into git; keep it local
+fintech_cdc_ledger/data/PS_20174392719_1491204439457_log.csv
+.DS_Store
