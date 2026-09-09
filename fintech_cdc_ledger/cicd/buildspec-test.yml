@@ -9,7 +9,11 @@ phases:
     runtime-versions:
       python: 3.11
     commands:
-      - pip install --quiet "apache-airflow==2.10.3" "apache-airflow-providers-amazon"
+      # must match the Airflow version the DAG is actually written for
+      # (Airflow 3's Task SDK style, `from airflow.sdk import ...` — same
+      # version as 3_labs/airflow_local's Docker image) — Airflow 2.10.3
+      # doesn't have the airflow.sdk module at all and fails every import.
+      - pip install --quiet "apache-airflow==3.3.1" "apache-airflow-providers-amazon" "apache-airflow-providers-standard"
   build:
     commands:
       - echo "Checking every DAG file compiles..."
@@ -19,7 +23,7 @@ phases:
       - export AIRFLOW_HOME=/tmp/airflow_test
       - mkdir -p $AIRFLOW_HOME/dags
       - cp fintech_cdc_ledger/airflow/dags/*.py $AIRFLOW_HOME/dags/
-      - airflow db init
+      - airflow db migrate   # Airflow 3 replaced "db init" with "db migrate"
       - |
         python -c "
         from airflow.models import DagBag
