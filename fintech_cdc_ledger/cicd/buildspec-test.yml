@@ -21,13 +21,16 @@ phases:
       - echo "Checking Airflow can actually parse the DAG (catches import
          errors py_compile can't see, e.g. a missing operator)..."
       - export AIRFLOW_HOME=/tmp/airflow_test
+      - export AIRFLOW__CORE__LOAD_EXAMPLES=false
       - mkdir -p $AIRFLOW_HOME/dags
       - cp fintech_cdc_ledger/airflow/dags/*.py $AIRFLOW_HOME/dags/
       - airflow db migrate   # Airflow 3 replaced "db init" with "db migrate"
       - |
         python -c "
         from airflow.models import DagBag
-        bag = DagBag(dag_folder='$AIRFLOW_HOME/dags', include_examples=False)
+        # Airflow 3 dropped DagBag's include_examples kwarg — controlled by
+        # AIRFLOW__CORE__LOAD_EXAMPLES instead (set above).
+        bag = DagBag(dag_folder='$AIRFLOW_HOME/dags')
         if bag.import_errors:
             for f, err in bag.import_errors.items():
                 print(f'DAG IMPORT ERROR in {f}: {err}')
