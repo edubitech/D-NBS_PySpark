@@ -27,6 +27,11 @@ phases:
       - airflow db migrate   # Airflow 3 replaced "db init" with "db migrate"
       - |
         python -c "
+        import sys
+        # the real Airflow scheduler auto-adds dags_folder to sys.path so
+        # sibling imports (fintech_cdc_pipeline.py -> import fintech_config)
+        # resolve — DagBag alone, run standalone like this, doesn't do that.
+        sys.path.insert(0, '$AIRFLOW_HOME/dags')
         from airflow.models import DagBag
         # Airflow 3 dropped DagBag's include_examples kwarg — controlled by
         # AIRFLOW__CORE__LOAD_EXAMPLES instead (set above).
