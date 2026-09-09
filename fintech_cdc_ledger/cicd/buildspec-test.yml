@@ -42,3 +42,10 @@ phases:
             raise SystemExit(1)
         print(f'{len(bag.dags)} DAG(s) parsed cleanly: {list(bag.dags.keys())}')
         "
+
+# without this, CodeBuild produces no output artifact at all, and the
+# Deploy stage fails with "NoSuchKey" trying to read one that was never
+# created — pass the whole checked-out source through unchanged.
+artifacts:
+  files:
+    - '**/*'
